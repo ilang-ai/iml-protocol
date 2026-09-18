@@ -1,0 +1,1 @@
+[BATC:READ|src=@PREV,lim=10]=>[BATC:FMT|fmt=md]=>[Ω|fmt=md]

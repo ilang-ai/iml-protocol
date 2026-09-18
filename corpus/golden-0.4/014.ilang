@@ -1,0 +1,1 @@
+[LIST:@REPORT_2026]=>[BATC:READ|path="a b",whr="x, y"]=>[Ω|fmt=json]

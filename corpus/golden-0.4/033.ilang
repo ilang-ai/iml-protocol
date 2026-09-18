@@ -1,0 +1,6 @@
+[GET:@COS|path=data/*.json]
+  =>[Π:PARS|fmt=json]
+  =>[Π:VALD|typ=schema]
+  =>[REDU]
+  =>[SAVE:@DRIVE|path=merged.json]
+  =>[Ω]

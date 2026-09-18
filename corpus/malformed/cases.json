@@ -18,18 +18,6 @@
   "label": "lower-case verb"
  },
  {
-  "input": "[Π:READ]",
-  "direction": "compile",
-  "expect": "E502",
-  "label": "verb in the target slot (alias)"
- },
- {
-  "input": "[BATC:READ]",
-  "direction": "compile",
-  "expect": "E502",
-  "label": "verb in the target slot"
- },
- {
   "input": "::STATE{@X, role:x}",
   "direction": "compile",
   "expect": "E502",
@@ -50,8 +38,8 @@
  {
   "input": "=>[READ]",
   "direction": "compile",
-  "expect": "E502",
-  "label": "chain starts with the pipe operator"
+  "expect": "E300",
+  "label": "orphan `=>` continuation: no preceding operation line"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 RD",
@@ -86,8 +74,8 @@
  {
   "input": "[READ] [FMT]",
   "direction": "compile",
-  "expect": "E300",
-  "label": "whitespace outside quotes"
+  "expect": "E502",
+  "label": "two chains on one line"
  },
  {
   "input": "[READ|path]",
@@ -888,5 +876,196 @@
   "expect": "E300",
   "label": "U+0085 (NEL) inside a quoted 0.3 value",
   "version": "0.3"
+ },
+ {
+  "input": "#iml/0.4/88d05d0839c1 BT:",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.4",
+  "label": "verb reference without a root"
+ },
+ {
+  "input": "#iml/0.4/88d05d0839c1 BT:R",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.4",
+  "label": "verb reference with a one-character root"
+ },
+ {
+  "input": "#iml/0.4/88d05d0839c1 BT:rd",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.4",
+  "label": "lower-case verb reference root"
+ },
+ {
+  "input": "#iml/0.4/88d05d0839c1 BT:XX",
+  "direction": "decompile",
+  "expect": "E304",
+  "version": "0.4",
+  "label": "verb reference root not in the registry"
+ },
+ {
+  "input": "#iml/0.4/88d05d0839c1 RD:FM",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.4",
+  "label": "`:` after a root other than BT"
+ },
+ {
+  "input": "#iml/0.4/88d05d0839c1 BT:RD@SR",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.4",
+  "label": "target after a verb reference"
+ },
+ {
+  "input": "#iml/0.4/88d05d0839c1 BT:$",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.4",
+  "label": "`$` (OUT) as a verb reference: not a root"
+ },
+ {
+  "input": "#iml/0.4/88d05d0839c1 BT: RD",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.4",
+  "label": "space after `BT:`"
+ },
+ {
+  "input": "#iml/0.4/88d05d0839c1 BT:@SR",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.4",
+  "label": "entity mark right after `BT:`"
+ },
+ {
+  "input": "#iml/0.4/88d05d0839c1 $:RD",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.4",
+  "label": "verb reference on `$`"
+ },
+ {
+  "input": "#iml/0.4/88d05d0839c1 BT:RD:MR",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.4",
+  "label": "second `:` after a verb reference"
+ },
+ {
+  "input": "#iml/0.4/88d05d0839c1 BT:RD,",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.4",
+  "label": "comma right after a verb reference"
+ },
+ {
+  "input": "#iml/0.4/88d05d0839c1 BT:RD=>MR",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.4",
+  "label": "I-Lang pipe operator after a verb reference"
+ },
+ {
+  "input": "#iml/0.4/88d05d0839c1 BT:RD  MR",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.4",
+  "label": "two spaces after a verb reference"
+ },
+ {
+  "input": "#iml/0.4/88d05d0839c1\nBT:RD\nRD:FM",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.4",
+  "label": "`:` after a root other than BT on a document line"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 RD",
+  "direction": "decompile",
+  "expect": "E502",
+  "version": "0.4",
+  "label": "0.2 header read by the default (0.4) reader without --version 0.2"
+ },
+ {
+  "input": "#iml/0.5/88d05d0839c1 RD",
+  "direction": "decompile",
+  "expect": "E502",
+  "version": "0.4",
+  "label": "later version read by the 0.4 reader"
+ },
+ {
+  "input": "[BATC:REED]",
+  "direction": "compile",
+  "expect": "E304",
+  "label": "unknown verb reference"
+ },
+ {
+  "input": "[BATC:read]",
+  "direction": "compile",
+  "expect": "E304",
+  "label": "lower-case verb reference"
+ },
+ {
+  "input": "[Π:Ω]",
+  "direction": "compile",
+  "expect": "E502",
+  "label": "OUT as a verb reference (aliases)"
+ },
+ {
+  "input": "[BATC:OUT]",
+  "direction": "compile",
+  "expect": "E502",
+  "label": "OUT as a verb reference"
+ },
+ {
+  "input": "[LOOP:READ]",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "verb reference on a verb other than BATC"
+ },
+ {
+  "input": "[BATC:]",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "empty verb reference"
+ },
+ {
+  "input": "[BATC: READ]",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "space after `BATC:`"
+ },
+ {
+  "input": "[BATC:READ:X]",
+  "direction": "compile",
+  "expect": "E304",
+  "label": "second `:` inside a verb reference"
+ },
+ {
+  "input": "[READ:@SRC]=>[Ω] [FMT]=>[Ω]",
+  "direction": "compile",
+  "expect": "E502",
+  "label": "two chains on one line (with OUT)"
+ },
+ {
+  "input": "[BATC:READ] [BATC:FMT]",
+  "direction": "compile",
+  "expect": "E502",
+  "label": "two chains on one line (verb references)"
+ },
+ {
+  "input": "[READ] =>[FMT]",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "space before the pipe operator (whitespace, not a second chain)"
+ },
+ {
+  "input": "[READ]=> [FMT]",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "space after the pipe operator (whitespace, not a second chain)"
  }
 ]

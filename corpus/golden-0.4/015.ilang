@@ -1,0 +1,1 @@
+[BATC:READ|path="say \"hi\"",exc="a\\b",sty="line\nbreak"]=>[Ω]

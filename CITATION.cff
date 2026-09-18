@@ -13,6 +13,10 @@ abstract: >-
   (@ for a target or an entity reference, $ for OUT, one space between
   operations) and a document form that carries one header for many chains;
   the registry, the AST, the round-trip law and the error codes are unchanged.
+  Version 0.4 adds the two flow forms the I-Lang canon defines for operation
+  chains, the batch shorthand [BATC:VERB] and multi-line chains, and records
+  that conditionals, parallel groups, DAGs, error handling and retry are not
+  operation-chain syntax in the canon and therefore not in IML.
   IML registers no verb, modifier key, entity or declaration of its own and is
   not part of the I-Lang canon.
 type: software
@@ -25,7 +29,7 @@ authors:
 repository-code: "https://github.com/ilang-ai/iml-protocol"
 url: "https://github.com/ilang-ai/iml-protocol"
 license: MIT
-version: "0.3.1"
+version: "0.4.0"
 date-released: 2026-09-18
 keywords:
   - I-Lang

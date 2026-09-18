@@ -1,13 +1,14 @@
-"""Load registry/iml-registry-0.2.json and verify its digest (SPEC-IML-0.3.md section 1).
+"""Load registry/iml-registry-0.2.json and verify its digest (SPEC-IML-0.4.md section 1).
 
 The registry is derived from the I-Lang canon by tools/derive_registry.py. Loading it
 recomputes the digest (sha256 of the JSON without the `digest` member, keys sorted,
 separators `,` and `:`, ensure_ascii False) and refuses a file whose digest does not
 match. Every header carries the first 12 hex characters of that digest.
 
-The registry is the one derived for 0.2 and is unchanged in 0.3: its `iml_version`
-member (0.2) names the vocabulary, and the digest 88d05d0839c1... stays. The version in
-a header is the surface version, HEADER_VERSION below, which the codec owns.
+The registry is the one derived for 0.2 and is unchanged in 0.3 and 0.4: its
+`iml_version` member (0.2) names the vocabulary, and the digest 88d05d0839c1... stays.
+The version in a header is the surface version, HEADER_VERSION below, which the codec
+owns.
 """
 
 import hashlib
@@ -16,7 +17,7 @@ from pathlib import Path
 
 DEFAULT_PATH = Path(__file__).resolve().parents[1] / "registry" / "iml-registry-0.2.json"
 HEADER_PREFIX = "#iml/"
-HEADER_VERSION = "0.3"   # the surface written by compile; 0.2 is read only (codec.SURFACES)
+HEADER_VERSION = "0.4"   # the surface written by compile; 0.3 is read by the same reader, 0.2 is read only (codec.SURFACES)
 
 
 class RegistryError(Exception):

@@ -1,13 +1,15 @@
 """IML AST, compile (AST -> IML text) and decompile (IML text -> AST).
 
-One AST, two surfaces (SPEC-IML-0.3.md section 2; SPEC-IML-0.2.md section 2 for 0.2):
+One AST, two surfaces (SPEC-IML-0.4.md section 2; SPEC-IML-0.2.md section 2 for 0.2):
 
-    0.3, written and read                     0.2, read only (version="0.2")
+    0.4, written and read (0.3 read too)      0.2, read only (version="0.2")
     document  := header NL chain (NL chain)*  (no document form)
     message   := header SP chain              message := header " " chain
-    header    := "#iml/0.3/" HEX12            header  := "#iml/0.2/" HEX12
+    header    := "#iml/0.4/" HEX12            header  := "#iml/0.2/" HEX12
     chain     := op (SP op)*                  chain   := op ("→" op)*
-    op        := (ROOT target? | "$") mods?   op      := (ROOT target? | "Ω") mods?
+    op        := (ROOT (target | verbref)?    op      := (ROOT target? | "Ω") mods?
+                  | "$") mods?
+    verbref   := ":" ROOT                     (none: `:` after a root is E300)
     target    := "@" (MARK | "{" NAME "}")    target  := "Φ" (MARK | "{" NAME "}")
     mods      := kv ("," kv)*
     kv        := KEY "=" value
@@ -16,6 +18,14 @@ One AST, two surfaces (SPEC-IML-0.3.md section 2; SPEC-IML-0.2.md section 2 for 
     bare      := no `,` `"` `\\` whitespace or control character; first character not
                  `~` `@` `$` `"`             (0.2: not `~` `Φ` `"`; `→` excluded anywhere)
 
+A verbref stands only after the root of BATC (`BT`): `BT:RD` is `[BATC:READ]`, the canon's
+batch shorthand (SPEC.md section 3.9). After any other root `:` is E300; `BT:` followed
+by anything but two characters of [A-Z0-9] is E300 (so `BT:`, `BT:R`, `BT:rd`, `BT:$`
+and `BT:@SR` are E300); two such characters that are not a root in the registry are E304;
+a target after the reference is E300. A 0.3 header is read by the 0.4 reader: the surface
+and the digest are the same, and a 0.3 text carries no `:` after a root, so every 0.3
+text is a 0.4 text with an older header.
+
 The registry, the AST, the value rules, the round-trip law and the six error codes are
 the same under both surfaces; only the reserved characters, the separator and the header
 differ. Every scalar keeps its lexeme: a type is a validation tag, never a rewrite.
@@ -23,9 +33,11 @@ Quoting is spelling: a `quoted` and a `bare` value with the same content are the
 AST value. Entity references in value position are a distinct kind. The codec fails
 closed: the first error stops it, with a 0-based character offset into the input.
 
-compile writes 0.3. The keyword `version="0.2"` on compile exists for the tests and the
-0.2 record (corpus/golden/*.iml); the command line does not expose it. decompile reads
-0.3 by default and 0.2 with version="0.2"; a header of the other version is E502.
+compile writes 0.4. The keyword `version="0.2"` on compile exists for the tests and the
+0.2 record (corpus/golden/*.iml); the command line does not expose it, and a verb
+reference has no 0.2 spelling (E502). decompile reads 0.4 and 0.3 by default and 0.2
+with version="0.2"; a header of another version is E502. version="0.3" names no
+surface (ValueError): the default reader reads a 0.3 header.
 """
 
 import re
@@ -38,11 +50,12 @@ RE_ROOT = re.compile(r"[A-Z0-9]{2}")
 RE_MARK = re.compile(r"[A-Z0-9]{2}")
 RE_KEYCODE = re.compile(r"[a-z]{2}")
 RE_CODE = re.compile(r"[a-z0-9]+")
-# 0.3: applied to the first line; a space opens a message, the end of the line a document
+# applied to the first line; a space opens a message, the end of the line a document
 RE_HEADER = re.compile(r"^#iml/([0-9]+\.[0-9]+)/([0-9a-f]{12})( |$)")
 RE_DOCUMENT_FIRST_LINE = re.compile(r"^#iml/[0-9]+\.[0-9]+/[0-9a-f]{12}(?:\r\n|\n|$)")
 
 VALUE_KINDS = ("bare", "quoted", "entity", "code")
+BATCH_VERB = "BATC"      # the one verb whose target slot may hold a verb reference (SPEC.md 3.9)
 
 
 class Surface:
@@ -50,12 +63,15 @@ class Surface:
     reference, omega is OUT, sep separates operations. reserved_in_bare are the
     characters a bare value may not contain (besides whitespace and control characters);
     first_excluded are the characters a bare value may not start with; first_reserved
-    is the subset of those that opens no other kind and is E303 (0.3: `$`)."""
+    is the subset of those that opens no other kind and is E303 (0.4: `$`). reads are
+    the header versions this surface's reader accepts (0.4 reads 0.3 too: same surface,
+    same digest); verbref says whether `:` after the BATC root opens a verb reference
+    (0.4) or is a stray character (0.2)."""
 
     __slots__ = ("version", "phi", "omega", "sep", "sep_name", "document",
-                 "reserved_in_bare", "first_excluded", "first_reserved")
+                 "reserved_in_bare", "first_excluded", "first_reserved", "reads", "verbref")
 
-    def __init__(self, version, phi, omega, sep, sep_name, document, first_reserved):
+    def __init__(self, version, phi, omega, sep, sep_name, document, first_reserved, reads, verbref):
         self.version = version
         self.phi = phi
         self.omega = omega
@@ -65,11 +81,13 @@ class Surface:
         self.reserved_in_bare = frozenset((",", '"', "\\", sep))
         self.first_excluded = frozenset(("~", phi, '"')) | frozenset(first_reserved)
         self.first_reserved = frozenset(first_reserved)
+        self.reads = frozenset(reads)
+        self.verbref = verbref
 
 
 SURFACES = {
-    "0.3": Surface("0.3", "@", "$", " ", "the space between operations", True, "$"),
-    "0.2": Surface("0.2", "\u03a6", "\u03a9", "\u2192", "`\u2192`", False, ""),
+    "0.4": Surface("0.4", "@", "$", " ", "the space between operations", True, "$", ("0.4", "0.3"), True),
+    "0.2": Surface("0.2", "\u03a6", "\u03a9", "\u2192", "`\u2192`", False, "", ("0.2",), False),
 }
 DEFAULT_VERSION = HEADER_VERSION
 VERSIONS = tuple(SURFACES)
@@ -79,7 +97,12 @@ assert DEFAULT_VERSION in SURFACES
 def surface(version):
     sf = SURFACES.get(version)
     if sf is None:
-        raise ValueError("unknown IML surface version %r (known: %s)" % (version, ", ".join(VERSIONS)))
+        hint = ""
+        for other in SURFACES.values():
+            if version in other.reads:
+                hint = "; a %s header is read with version=%r%s" % (
+                    version, other.version, " (the default reader)" if other.version == DEFAULT_VERSION else "")
+        raise ValueError("unknown IML surface version %r (known: %s)%s" % (version, ", ".join(VERSIONS), hint))
     return sf
 
 
@@ -116,28 +139,35 @@ class Value:
 
 
 class Op:
-    """One operation: canon verb name, target entity name (without `@`) or None, and
-    the modifiers as a tuple of (key, Value) pairs in order."""
+    """One operation: canon verb name; target entity name (without `@`) or None; the
+    modifiers as a tuple of (key, Value) pairs in order; and verbref, the canon name of
+    the verb a BATC operation references (`[BATC:READ]`, IML `BT:RD`) or None. A target
+    and a verb reference exclude each other (ValueError)."""
 
-    __slots__ = ("verb", "target", "mods")
+    __slots__ = ("verb", "target", "mods", "verbref")
 
-    def __init__(self, verb, target=None, mods=()):
+    def __init__(self, verb, target=None, mods=(), verbref=None):
+        if target is not None and verbref is not None:
+            raise ValueError("an operation carries a target or a verb reference, not both")
         self.verb = verb
         self.target = target
         self.mods = tuple(mods)
+        self.verbref = verbref
 
     def __eq__(self, other):
-        return (isinstance(other, Op) and self.verb == other.verb
-                and self.target == other.target and self.mods == other.mods)
+        return (isinstance(other, Op) and self.verb == other.verb and self.target == other.target
+                and self.verbref == other.verbref and self.mods == other.mods)
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __hash__(self):
-        return hash((self.verb, self.target, self.mods))
+        return hash((self.verb, self.target, self.verbref, self.mods))
 
     def __repr__(self):
-        return "Op(%r, %r, %r)" % (self.verb, self.target, self.mods)
+        if self.verbref is None:
+            return "Op(%r, %r, %r)" % (self.verb, self.target, self.mods)
+        return "Op(%r, %r, %r, verbref=%r)" % (self.verb, self.target, self.mods, self.verbref)
 
 
 class Chain:
@@ -208,10 +238,10 @@ def scan_quoted(text, i, what="quoted value", end=None):
     raise IMLError("E300", "unterminated %s" % what, i)
 
 
-def check_no_whitespace(text, start=0):
-    """E300 at the first whitespace character outside a quoted value at or after start.
-    A quote opens a value only right after `=` (SPEC.md 2.4 spelling). Used by the
-    I-Lang reader and by the 0.2 surface, where no whitespace is allowed in a chain."""
+def first_whitespace_outside_quotes(text, start=0):
+    """Index of the first whitespace character outside a quoted value at or after start,
+    or None. A quote opens a value only right after `=` (SPEC.md 2.4 spelling); a raw
+    control character inside a quoted value is E300 where it stands."""
     quoted = escaped = False
     for k in range(start, len(text)):
         c = text[k]
@@ -229,14 +259,24 @@ def check_no_whitespace(text, start=0):
             quoted = True
             continue
         if c.isspace():
-            raise IMLError("E300", "whitespace is not allowed outside a quoted value", k)
+            return k
+    return None
+
+
+def check_no_whitespace(text, start=0):
+    """E300 at the first whitespace character outside a quoted value at or after start.
+    Used by the 0.2 surface, where no whitespace is allowed in a chain; the I-Lang
+    reader uses first_whitespace_outside_quotes to tell a second chain (E502) apart."""
+    k = first_whitespace_outside_quotes(text, start)
+    if k is not None:
+        raise IMLError("E300", "whitespace is not allowed outside a quoted value", k)
 
 
 def iml_bareable(content, version=DEFAULT_VERSION):
     """True when content may be written as a bare value on the given surface: not
     empty, none of the surface's reserved characters, no whitespace or control
     character, and not starting with one of its first-position exclusions
-    (0.3: `~` `@` `$` `"`; 0.2: `~` `Φ` `"`)."""
+    (0.4: `~` `@` `$` `"`; 0.2: `~` `Φ` `"`)."""
     sf = surface(version)
     if not content or content[0] in sf.first_excluded:
         return False
@@ -249,15 +289,17 @@ def iml_bareable(content, version=DEFAULT_VERSION):
 # ---------------------------------------------------------------------- compile
 def compile(chain, registry=None, version=DEFAULT_VERSION):
     """AST -> IML message text: header, one space, chain. Strict: an unknown verb is
-    E304, an unknown key E302, a bad entity name E200, OUT not last E502. version
-    selects the surface; the command line writes 0.3 only."""
+    E304, an unknown key E302, a bad entity name E200, OUT not last E502, a verb
+    reference on a verb other than BATC E300, an unknown verb reference E304, OUT as
+    the reference E502. version selects the surface; the command line writes 0.4 only,
+    and a verb reference has no spelling on the 0.2 surface (E502)."""
     reg = registry or default_registry()
     sf = surface(version)
     return reg.header_for(sf.version) + " " + _compile_chain(chain, reg, sf)
 
 
 def compile_document(chains, registry=None):
-    """ASTs -> IML 0.3 document text: the header alone on the first line, then one chain
+    """ASTs -> IML 0.4 document text: the header alone on the first line, then one chain
     per line, lines joined by `\\n`, no final newline. At least one chain (E300)."""
     reg = registry or default_registry()
     sf = surface(DEFAULT_VERSION)
@@ -284,6 +326,8 @@ def _compile_chain(chain, reg, sf):
                 raise IMLError("E502", "OUT may appear only as the last operation", op_index=idx)
             if op.target is not None:
                 raise IMLError("E502", "OUT with a target is not representable in IML", op_index=idx)
+            if op.verbref is not None:
+                raise IMLError("E502", "OUT with a verb reference is not representable in IML", op_index=idx)
             s = sf.omega
         else:
             root = reg.verb_root.get(op.verb)
@@ -292,6 +336,8 @@ def _compile_chain(chain, reg, sf):
             s = root
             if op.target is not None:
                 s += _compile_entity(op.target, reg, sf, idx)
+            elif op.verbref is not None:
+                s += _compile_verbref(op.verbref, op.verb, reg, sf, idx)
         if op.mods:
             kvs = []
             for key, val in op.mods:
@@ -311,6 +357,22 @@ def _compile_entity(name, reg, sf, idx):
     if mark:
         return sf.phi + mark
     return sf.phi + "{" + name + "}"
+
+
+def _compile_verbref(ref, verb, reg, sf, idx):
+    """`:` and the root of the referenced verb. The AST holds the canon verb name (an
+    alias was collapsed when read); only BATC references a verb; OUT has no root and
+    cannot be batched; the 0.2 surface has no spelling for a reference."""
+    if not sf.verbref:
+        raise IMLError("E502", "a verb reference has no spelling on the %s surface" % sf.version, op_index=idx)
+    if verb != BATCH_VERB:
+        raise IMLError("E300", "verb reference %r on %s: only BATC references a verb (SPEC.md 3.9)" % (ref, verb), op_index=idx)
+    if ref == "OUT":
+        raise IMLError("E502", "OUT cannot be batched: not representable in IML", op_index=idx)
+    root = reg.verb_root.get(ref) if isinstance(ref, str) else None
+    if root is None:
+        raise IMLError("E304", "BATC verb reference %r is not a registered verb" % (ref,), op_index=idx)
+    return ":" + root
 
 
 def _compile_value(val, key, reg, sf, idx):
@@ -336,15 +398,16 @@ def is_document(text):
 def decompile(text, registry=None, version=DEFAULT_VERSION):
     """IML text -> AST. The form is decided by the first line: a header followed by one
     space and a chain is a message and returns one Chain; a header alone on the first
-    line (0.3 only) opens a document, and every following line is one chain: the result
-    is a list of Chain, in order. One final line terminator (`\\n` or `\\r\\n`) is
+    line (0.4 and 0.3 only) opens a document, and every following line is one chain: the
+    result is a list of Chain, in order. One final line terminator (`\\n` or `\\r\\n`) is
     accepted on either form; a blank line, a trailing space and a second header in a
     document are errors.
 
     The header is read in this order: no `#iml/` prefix is E502 (no header); a prefix
     that does not have the shape `#iml/<digits>.<digits>/<12 lowercase hex>` followed
-    by a space or the end of the line is E300; a shaped header of another version, or
-    with a digest prefix that is not the loaded registry's, is E502."""
+    by a space or the end of the line is E300; a shaped header of a version the reader
+    does not accept (the default reader accepts 0.4 and 0.3; the 0.2 reader 0.2 only),
+    or with a digest prefix that is not the loaded registry's, is E502."""
     reg = registry or default_registry()
     sf = surface(version)
     if not isinstance(text, str) or not text.startswith("#iml/"):
@@ -393,13 +456,18 @@ def decompile(text, registry=None, version=DEFAULT_VERSION):
 
 
 def _check_version_and_digest(m, reg, sf):
-    if m.group(1) != sf.version:
+    if m.group(1) not in sf.reads:
         hint = ""
-        if m.group(1) in SURFACES:
-            hint = "; the %s surface is read with version=%r (`--version %s` on the command line)" % (
-                m.group(1), m.group(1), m.group(1))
+        for other in SURFACES.values():
+            if m.group(1) in other.reads:
+                if other.version == DEFAULT_VERSION:
+                    hint = "; a %s header is read with version=%r, the default reader (no `--version` on the command line)" % (
+                        m.group(1), other.version)
+                else:
+                    hint = "; the %s surface is read with version=%r (`--version %s` on the command line)" % (
+                        m.group(1), other.version, other.version)
         raise IMLError("E502", "unsupported IML version %s (this decoder reads %s)%s"
-                       % (m.group(1), sf.version, hint), len("#iml/"))
+                       % (m.group(1), ", ".join(sorted(sf.reads, reverse=True)), hint), len("#iml/"))
     if m.group(2) != reg.digest[:12]:
         raise IMLError("E502", "registry digest mismatch: message %s, registry %s" % (m.group(2), reg.digest[:12]), m.start(2))
 
@@ -407,8 +475,8 @@ def _check_version_and_digest(m, reg, sf):
 def _decompile_line_02(text, reg, sf):
     """The 0.2 surface, as the 0.2.1 codec read it: one line, no whitespace outside
     quotes, ops joined by `→`. The header shape is judged on the first line, the version
-    next (a 0.3 header is E502), and then the one form this surface has: header, one
-    space, one chain, nothing after it on the line and no line after it."""
+    next (a 0.3 or 0.4 header is E502), and then the one form this surface has: header,
+    one space, one chain, nothing after it on the line and no line after it."""
     length = len(text)
     nl = text.find("\n")
     line_end = length if nl < 0 else nl
@@ -436,11 +504,14 @@ def _scan_chain(text, i, n, reg, sf, idx=0):
             raise IMLError("E300", "missing operation after %s" % sf.sep_name, i, idx)
         c = text[i]
         target = None
+        verbref = None
         if c == omega:
             verb = "OUT"
             i += 1
             if i < n and text[i] == phi:
                 raise IMLError("E300", "`%s` (OUT) takes no target" % omega, i, idx)
+            if i < n and text[i] == ":" and sf.verbref:
+                raise IMLError("E300", "`%s` (OUT) takes no verb reference" % omega, i, idx)
         else:
             root = text[i:min(i + 2, n)]
             if not RE_ROOT.fullmatch(root):
@@ -451,6 +522,8 @@ def _scan_chain(text, i, n, reg, sf, idx=0):
             i += 2
             if i < n and text[i] == phi:
                 target, i = _scan_entity(text, i, n, reg, sf, idx)
+            elif i < n and text[i] == ":" and sf.verbref:
+                verbref, i = _scan_verbref(text, i, n, verb, root, reg, sf, idx)
         mods = []
         if i < n and "a" <= text[i] <= "z":
             while True:
@@ -510,7 +583,7 @@ def _scan_chain(text, i, n, reg, sf, idx=0):
                 if text[i] == sep:
                     break
                 raise IMLError("E300", "stray character after value", i, idx)
-        ops.append(Op(verb, target, mods))
+        ops.append(Op(verb, target, mods, verbref))
         if i >= n:
             break
         if text[i] == sep:
@@ -521,6 +594,28 @@ def _scan_chain(text, i, n, reg, sf, idx=0):
             continue
         raise IMLError("E300", "stray character %r" % text[i], i, idx)
     return Chain(ops)
+
+
+def _scan_verbref(text, i, n, verb, root, reg, sf, idx):
+    """Read `:` ROOT at text[i] == ":", right after the root of verb. Return (canon name
+    of the referenced verb, index after it). Only `BT` (BATC) takes one: E300 after any
+    other root. The two characters after `:` must be [A-Z0-9]{2} (E300: so the end of
+    the chain, a space, a lower-case letter, one character, `$` or `@` there are E300)
+    and a root in the registry (E304). A target after the reference is E300: the two
+    exclude each other."""
+    if verb != BATCH_VERB:
+        raise IMLError("E300", "`:` after a root other than BT (%s): only BT (BATC) takes a verb reference" % root, i, idx)
+    ref = text[i + 1:min(i + 3, n)]
+    if not RE_ROOT.fullmatch(ref):
+        raise IMLError("E300", "`BT:` must be followed by a verb root [A-Z0-9]{2} (seen %r)" % ref, i + 1, idx)
+    name = reg.root_verb.get(ref)
+    if name is None:
+        raise IMLError("E304", "BATC verb reference root %r is not in the registry" % ref, i + 1, idx)
+    j = i + 3
+    if j < n and text[j] == sf.phi:
+        raise IMLError("E300", "a target after a verb reference: `BT:%s` takes no `%s` target (the two exclude each other)"
+                       % (ref, sf.phi), j, idx)
+    return name, j
 
 
 def _scan_entity(text, i, n, reg, sf, idx):

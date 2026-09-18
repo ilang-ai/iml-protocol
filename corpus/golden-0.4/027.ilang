@@ -1,0 +1,1 @@
+[BATC:LOOP|whr=until:done]=>[BATC:WAIT|whr=status:ready]=>[Ω]

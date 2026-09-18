@@ -1,0 +1,19 @@
+[PLAN:@SRC|len=5-15]=>[Ω]
+
+[CREA:@LOCAL|path=auth/login.go]
+  =>[TEST]
+  =>[REVW]
+  =>[Ω]
+[CREA:@LOCAL|path=auth/register.go]
+  =>[TEST]
+  =>[REVW]
+  =>[Ω]
+
+[DPLO:@WORKER]
+  =>[CHEK|whr=status:200]
+  =>[Ω]
+
+[LIST:@LOCAL|mch=*.md]
+  =>[Π:READ]
+  =>[Σ]
+  =>[Ω]

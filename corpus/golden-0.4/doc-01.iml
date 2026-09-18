@@ -1,0 +1,6 @@
+#iml/0.4/88d05d0839c1
+PL@SRle=5-15 $
+CE@LCpt=auth/login.go TS RV $
+CE@LCpt=auth/register.go TS RV $
+DP@WR CKwh=status:200 $
+LS@LCmc=*.md BT:RD MR $

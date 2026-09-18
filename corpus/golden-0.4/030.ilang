@@ -1,0 +1,1 @@
+[LIST:@LOCAL|mch=*.csv]=>[Π:READ]=>[Π:PARS|fmt=csv]=>[Σ]=>[FILT|whr=score>80]=>[SORT|srt=desc]=>[FMT|fmt=json]=>[Ω]

@@ -1,0 +1,1 @@
+[WAIT|whr=status:ready]=>[CHEK|whr=status:200]=>[Ω]

@@ -34,9 +34,24 @@ Scope, and nothing beyond it:
 4. Everything else is unchanged: the registry and its digest `88d05d0839c1`, the AST, the value rules, the canonical print, the round-trip law, the six error codes, the subset.
 5. Measured before and after on the same corpus and encodings (`measurements/0.3-2026-09-18.md`): 0.3 message 2,438 cl100k_base tokens with one header per chain, 0.3 document 1,315 with one header for the 72 chains, I-Lang canonical print 2,040, JSON baseline 3,195; the rule sheet 1,792. The figures are the figures; the efficiency gate below is unchanged and not met.
 
-## Deferred to 0.4
+## 0.4, flow within the canon
 
-Conditionals, loops, parallel groups and DAGs; error handling and retry; MCP and A2A adapters. Before any of these enters a draft, three definitions must exist: the loop body and its termination; the source of truth for a condition (I-Lang `EVAL` returns a map, not a boolean); and the meaning of Ω inside a branch.
+Released 2026-09-18 as v0.4.0. The three definitions that the 0.3 roadmap demanded before any 0.4 draft were written first, from canon text, and two of them found that the construct does not exist at chain level. 0.4 then widened the subset by exactly the two flow forms the canon defines for operation chains, and nothing else. `SPEC-IML-0.4.md` §0.3 records what was checked and §0.4 the definitions.
+
+Scope, and nothing beyond it:
+
+1. The verb reference of canon §3.9 on BATC: `[BATC:READ]` and `[Π:READ]` compile to `BT:RD`; an alias collapses to its verb; OUT cannot be referenced (E502); on any other verb a target that is not an entity stays E300 with the validator's wording. `[BATC|op=READ]` stays a string modifier, and the codec does not convert one form into the other.
+2. Multi-line chains on compile: a line whose first non-blank characters are `=>` continues the chain above it (PATCH-2 §1.7); the joined text is parsed as a one-line chain, so the AST, the IML line and the canonical print are those of the one-line spelling, and an orphan `=>` line is E300 in the validator's wording. IML lines never continue.
+3. The three definitions, written from canon text: the loop body and its termination (BATC is the canon's one loop over data, the referenced verb applied per item and terminating at the end of the list; LOOP has no body or termination rule in the canon and is carried as a plain operation); the source of truth for a condition (the canon has no chain-level conditional; CHEK, WAIT, EVAL and DECI return values that the executing model reads, and IML evaluates nothing); Ω inside a branch (there are no branches; Ω marks the final output of its chain and stands last).
+4. The header `#iml/0.4/88d05d0839c1`; a 0.3 header is read without a flag (same surface, same digest); a 0.2 header stays behind `--version 0.2`; compile writes 0.4 only. The registry and its digest, the value rules, the canonical print, the round-trip law and the six error codes are unchanged; the AST gains one field.
+5. Checked against `canon/SPEC.md` and the pinned validator, and found absent from operation-chain syntax: conditionals (`when:` and `::RULE` are declaration-level), parallel groups and DAGs (`PARALLEL{}` and `T[a]→T[b]` are §7.5 narrative notation, which the validator reads as opaque note lines), error handling and retry (the v4.0 PROTOCOL header's `fallback=` and `degrade=` are the envelope), and the token `||`, which the canon does not contain and which 0.4 drops from the excluded list. Two chains on one I-Lang line stay outside (E502 with its own message); the document form carries several chains.
+6. Measured on the 72-chain golden corpus: 0.4 changes no figure of the 0.3 measurement, because the header differs by one digit and both encodings tokenise the two headers to the same count; the `corpus/golden-0.4/` chains are measured in `measurements/0.4-2026-09-18.md`. The figures are the figures; the efficiency gate below is unchanged and not met.
+
+## Deferred to 0.5, gated on chain syntax in the canon
+
+Conditionals, loops beyond BATC, parallel groups and DAGs, error handling and retry. Each needs operation-chain syntax in the canon (ilang-spec) before a draft here: IML defines no construct of its own, and at the pinned commit none of these is chain syntax (`SPEC-IML-0.4.md` §0.3). The three definitions written for 0.4 stand until the canon changes.
+
+MCP and A2A adapters are not codec work: they carry IML and do not change it, and they are not versioned with the specification.
 
 ## Belongs to the envelope, not to IML
 
@@ -66,3 +81,4 @@ Serialising OpenAPI schemas; variable-length verb coding; outreach to transport 
 | 2026-09-18 | 0.2.2 released as v0.2.2: citation metadata for the Zenodo archive; no other change. |
 | 2026-09-18 | 0.3.0 released as v0.3.0: ASCII surface (`@`, `$`, one space) and the document form with one header for many chains; `SPEC-IML-0.3.md`, the 0.3 rule sheet, `corpus/golden-0.3/`, 41 malformed cases added, the 0.2 surface read behind `--version 0.2`, measurement before and after. On the golden corpus the 0.3 message is 2,438 cl100k_base tokens (0.2: 2,761; I-Lang print: 2,040) and the 0.3 document 1,315. The registry and its digest are unchanged. |
 | 2026-09-18 | 0.3.1 released as v0.3.1, a fix release after an adversarial review of a clean clone: control-character set, Unicode whitespace in the bare rule, grammar line terminators, measured per-mark token cost, rule-sheet gaps, CLI edge cases. Message form and registry unchanged. |
+| 2026-09-18 | 0.4.0 released as v0.4.0: flow within the canon. The verb reference of canon §3.9 on BATC (`[BATC:READ]`, `BT:RD`), multi-line chains joined on compile (PATCH-2 §1.7), the three definitions written from canon text, the header `#iml/0.4/` with a 0.3 header read without a flag; `SPEC-IML-0.4.md`, the 0.4 rule sheet, `corpus/golden-0.4/` (36 chains and one document pair), 27 malformed cases added, `measurements/0.4-2026-09-18.md`. Conditionals, parallel groups, DAGs, error handling and retry were checked against the canon and the pinned validator and are not chain syntax there, so not in IML. The registry and its digest are unchanged; on the 72-chain corpus no figure changes. |
