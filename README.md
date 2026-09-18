@@ -6,6 +6,7 @@ A machine form of I-Lang v4.x operation chains, with fixed-width codes derived f
 - **Canon:** the I-Lang protocol is specified in [ilang-ai/ilang-spec](https://github.com/ilang-ai/ilang-spec). IML registers no verb, modifier key, entity or declaration of its own; its vocabulary is derived from that canon at a pinned commit.
 - **Creator:** [Long Quan Zhu](https://orcid.org/0009-0004-4540-8082) (Max, @SUN). iLang Inc.
 - **License:** MIT.
+- **Citation:** [CITATION.cff](CITATION.cff); Zenodo archives each release from 0.2.2 on.
 
 ## What is in this repository
 
@@ -90,4 +91,5 @@ Write `IML (I-Lang Machine Layer)` on first mention. IML is a representation lay
 |---------|-------|
 | 0.1 | Archived draft, filed 2026-09-12. Not implemented. |
 | 0.2 | Released 2026-09-18 as v0.2.0: specification, registry, reference codec, corpora, measurement. |
+| 0.2.2 | Released 2026-09-18 as v0.2.2: citation metadata (CITATION.cff, .zenodo.json) for the Zenodo archive. Message form and registry unchanged. |
 | 0.2.1 | Released 2026-09-18 as v0.2.1, a fix release: `.gitattributes` pins LF; the I-Lang bare-value character set, the header shape and raw control characters inside quotes are fixed in the codec and stated in the specification (§12 lists the sections); 15 malformed cases added; measurement regenerated. Message form and registry unchanged. |

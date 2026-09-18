@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+message: "If you use IML, please cite it as below."
+title: "IML (I-Lang Machine Layer)"
+abstract: >-
+  IML (I-Lang Machine Layer) is an experimental machine form of I-Lang v4.x
+  operation chains, with fixed-width codes derived from the I-Lang canon at a
+  pinned commit. Version 0.2 fixes the supported subset (one linear operation
+  chain), the registry derivation and its digest, the grammar and its
+  segmentation rule, the message header, the canonical I-Lang print, the
+  round-trip law at the AST level, and six error codes taken from the I-Lang
+  specification, and ships a reference codec, golden and malformed corpora and
+  a measurement report. IML registers no verb, modifier key, entity or
+  declaration of its own and is not part of the I-Lang canon.
+type: software
+authors:
+  - given-names: "Long Quan"
+    family-names: "Zhu"
+    alias: "静水流深"
+    orcid: "https://orcid.org/0009-0004-4540-8082"
+    affiliation: "iLang Inc."
+repository-code: "https://github.com/ilang-ai/iml-protocol"
+url: "https://github.com/ilang-ai/iml-protocol"
+license: MIT
+version: "0.2.2"
+date-released: 2026-09-18
+keywords:
+  - I-Lang
+  - machine layer
+  - AI communication protocol
+  - AI-to-AI communication
+  - codec
+  - intermediate representation
+  - structured instruction

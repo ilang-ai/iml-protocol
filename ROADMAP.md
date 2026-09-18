@@ -51,3 +51,4 @@ Serialising OpenAPI schemas; variable-length verb coding; outreach to transport 
 | 2026-09-18 | Repository opened. |
 | 2026-09-18 | 0.2 released as v0.2.0: specification, registry derived from ilang-spec 127ba56, reference codec, 72 golden and 76 malformed cases, measurement report. On the golden corpus IML is longer than the I-Lang canonical print in bytes, characters and tokens. |
 | 2026-09-18 | 0.2.1 released as v0.2.1, a fix release after an adversarial review of a clean clone: `.gitattributes` pins LF so a Windows clone keeps the canon sha256; the I-Lang bare-value character set, the header shape and raw control characters inside quotes are fixed in the codec and stated in the specification; 15 malformed cases added; the measurement regenerated. The message form and the registry are unchanged (digest `88d05d0839c1`). |
+| 2026-09-18 | 0.2.2 released as v0.2.2: citation metadata for the Zenodo archive; no other change. |
