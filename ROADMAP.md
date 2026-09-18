@@ -4,6 +4,8 @@ Versions are triggered by gates, not by dates. Each released version is an immut
 
 ## 0.2, the first implementable version
 
+Released 2026-09-18 as v0.2.0. Every item below is in the repository; README.md says where.
+
 Scope, and nothing beyond it:
 
 1. A registry derived from the I-Lang canon at a pinned commit (88 verbs, 29 core modifier keys, the entity tiers), carrying that commit's digest. IML registers nothing of its own.
@@ -47,3 +49,4 @@ Serialising OpenAPI schemas; variable-length verb coding; outreach to transport 
 | 2026-09-12 | Draft 0.1 filed. |
 | 2026-09-18 | Draft 0.1 reviewed: six blocking defects; 0.2 scope fixed as above. |
 | 2026-09-18 | Repository opened. |
+| 2026-09-18 | 0.2 released as v0.2.0: specification, registry derived from ilang-spec 127ba56, reference codec, 72 golden and 76 malformed cases, measurement report. On the golden corpus IML is longer than the I-Lang canonical print in bytes, characters and tokens. |
