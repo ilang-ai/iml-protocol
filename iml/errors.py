@@ -2,8 +2,11 @@
 
 The codec fails closed: the first error stops it. An error carries the code, a message,
 the 0-based character offset into the input where it was detected (None when there is
-no text input, e.g. when compiling an AST built by hand) and, where an operation is
-known, the 0-based index of that operation in the chain.
+no text input, e.g. when compiling an AST built by hand), where an operation is known,
+the 0-based index of that operation in the chain, and, for an error of the document
+writer's checks (compile_doc and decompile_doc read the canonical print back), the 0-based
+index of the top-level document item it belongs to (`item`), at whose first source line
+the command line reports it.
 """
 
 CODES = {
@@ -17,7 +20,7 @@ CODES = {
 
 
 class IMLError(Exception):
-    def __init__(self, code, message, offset=None, op_index=None):
+    def __init__(self, code, message, offset=None, op_index=None, item=None):
         if code not in CODES:
             raise ValueError("unknown error code %r" % code)
         super().__init__(message)
@@ -25,6 +28,7 @@ class IMLError(Exception):
         self.message = message
         self.offset = offset
         self.op_index = op_index
+        self.item = item
 
     def __str__(self):
         where = []

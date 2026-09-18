@@ -242,7 +242,8 @@ def scan_quoted(text, i, what="quoted value", end=None):
             raise IMLError("E300", "raw control character U+%04X inside %s%s" % (ord(c), what, hint), j)
         buf.append(c)
         j += 1
-    raise IMLError("E300", "unterminated %s" % what, i)
+    # "unterminated quoted value" in a chain; "unterminated quote in a text line" in a document
+    raise IMLError("E300", ("unterminated %s" if what == "quoted value" else "unterminated quote in %s") % what, i)
 
 
 def first_whitespace_outside_quotes(text, start=0):
@@ -425,9 +426,10 @@ def decompile(text, registry=None, version=DEFAULT_VERSION):
     by a space or the end of the line is E300; a shaped header of a version the reader
     does not accept (the default reader accepts 0.5, 0.4 and 0.3; the 0.2 reader 0.2
     only), or with a digest prefix other than the one its version carries (the 0.5
-    registry's for 0.5, the chain registry's for 0.4, 0.3 and 0.2), is E502. In a 0.5
-    message a declaration or text line (a first character `:` or `"`) is E502: those exist
-    in the document form only."""
+    registry's for 0.5, the chain registry's for 0.4, 0.3 and 0.2), is E502. In a message
+    a declaration or text line (a first character `:` or `"`) is E502: under a 0.5 header
+    those exist in the document form only, and under a 0.4 or 0.3 header they need a 0.5
+    header, in a message as in a document."""
     reg = registry or default_registry()
     sf = surface(version)
     if not isinstance(text, str) or not text.startswith("#iml/"):
@@ -453,12 +455,16 @@ def decompile(text, registry=None, version=DEFAULT_VERSION):
             if nl >= 0:
                 raise IMLError("E300", "trailing space after the header: a document header stands alone on its line", i - 1)
             raise IMLError("E300", "empty chain", i)
-        if text[i] in '":' and m.group(1) in DOCUMENT_LAYER_VERSIONS:
-            raise IMLError("E502", "declarations and text lines exist only in the document form (the header alone"
-                           " on its first line); a message carries one chain", i)
+        if text[i] in '":':
+            if m.group(1) in DOCUMENT_LAYER_VERSIONS:
+                raise IMLError("E502", "declarations and text lines exist only in the document form (the header alone"
+                               " on its first line); a message carries one chain", i)
+            raise IMLError("E502", "declarations and text lines need a 0.5 header (this message's header is version %s)"
+                           % m.group(1), i)
         return _scan_chain(text, i, line_end, reg, sf)
     if nl < 0:
-        raise IMLError("E300", "header alone: a document carries at least one chain line after the header", length)
+        raise IMLError("E300", "header alone: a document carries at least one %s line after the header"
+                       % ("item" if m.group(1) in DOCUMENT_LAYER_VERSIONS else "chain"), length)
     from .doc_read import read_document       # the document layer (iml.doc_*) imports this module
     return read_document(text, nl, m.group(1), reg, sf)
 

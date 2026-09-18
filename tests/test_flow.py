@@ -17,6 +17,7 @@ reported there with the validator's wording for a bracket line."""
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -25,10 +26,10 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tests"))
 
 from iml import (DEFAULT_VERSION, VERSIONS, Chain, IMLError, Op, Value, compile, compile_document,  # noqa: E402
-                 decompile, default_registry, parse_L2, print_L2)
+                 decompile, default_registry, parse_doc, parse_L2, print_L2)
 from iml.__main__ import UNTERMINATED, join_chain_lines, non_empty_lines, parse_chain  # noqa: E402
 from iml.codec import SURFACES, surface  # noqa: E402
-from iml.l2 import ends_with_closed_operation  # noqa: E402
+from iml.l2 import ChainJoiner, ends_with_closed_operation  # noqa: E402
 from test_roundtrip import PREAMBLE_LINES, run_validator  # noqa: E402
 
 GOLDEN = ROOT / "corpus" / "golden"
@@ -369,6 +370,31 @@ class TestJoinChainLines(unittest.TestCase):
         self.assertEqual((entries[0][1], entries[2][1]), ("[LIST]", "[FMT]=>[Ω]"))
         self.assertIsInstance(entries[1][1], IMLError)
 
+    def test_the_join_is_linear(self):
+        """0.5.1: a chain of 20,000 lines is joined and parsed in well under 5 s, on the
+        compile side and by the document reader, at the top level and in a body (0.5.0
+        scanned the text joined so far again for every line, about 43 s); the quote state
+        kept from piece to piece agrees with ends_with_closed_operation at every split."""
+        n = 20000
+        src = "\n".join(['[READ:@SRC|path="a]b"]'] + ["  =>[FMT|fmt=md]"] * (n - 2) + ["  =>[Ω]"]) + "\n"
+        t0 = time.perf_counter()
+        (no, text), = join_chain_lines(src)
+        chain = parse_chain(text)
+        t1 = time.perf_counter()
+        top = parse_doc("::ILANG::v5.0\n::FACT{a:b}\n" + src)     # after the preamble: an operation line
+        body = parse_doc("::ILANG::v5.0\n::ACTIVATE{a}\n  " + src)
+        t2 = time.perf_counter()
+        self.assertEqual((no, len(chain.ops)), (1, n))
+        self.assertEqual((top[2], body[1].body), (chain, (chain,)))
+        self.assertLess(t1 - t0, 5.0)
+        self.assertLess(t2 - t1, 5.0)
+        for whole in ('[READ|path="a]"]', '[READ|whr="a\\"]"]=>[FMT]', "[READ|path=x]=>", '[W|a="b=\\"c"]x]', ""):
+            for k in range(len(whole) + 1):
+                joiner = ChainJoiner(whole[:k])
+                joiner.add(whole[k:])
+                self.assertEqual((joiner.closed(), joiner.text(), joiner.length),
+                                 (ends_with_closed_operation(whole), whole, len(whole)), (whole, k))
+
     def test_continuation_spellings_the_validator_accepts(self):
         """SPEC-IML-0.4.md section 0.3: a space after the `=>` of a continuation line, and a
         `=>` line under a line that ends in `=>`, pass the validator with 0 errors; both
@@ -505,7 +531,7 @@ class TestCommandLineInput(unittest.TestCase):
         cls.h = default_registry().header
         cls.message = compile(parse_L2(WORKED))
 
-    def test_one_leading_bom_is_dropped(self):
+    def test_leading_byte_order_marks_are_dropped(self):
         src = (WORKED + "\n").encode("utf-8")
         multi = "[DPLO:@WORKER]\n  =>[CHEK|whr=status:200]\n  =>[Ω]\n".encode("utf-8")
         document = (self.h + "\nRD\nBT:RD $\n").encode("utf-8")
@@ -531,13 +557,23 @@ class TestCommandLineInput(unittest.TestCase):
             self.assertEqual((r.returncode, r.stdout), (0, WORKED + "\n"), r.stderr)
             r = run_cli("decompile", str(files["bom-doc.iml"]))
             self.assertEqual((r.returncode, r.stdout.splitlines()), (0, ["[READ]", "[BATC:READ]=>[Ω]"]), r.stderr)
-            # one mark is dropped, not two: the second reaches the parser and is refused
+            # 0.5.1: every leading mark is dropped, not one (Windows PowerShell 5.1 pipes two when
+            # [Console]::InputEncoding and $OutputEncoding are both set to UTF-8)
             r = run_cli("compile", str(files["two-boms.ilang"]))
-            self.assertEqual(r.returncode, 1)
-            self.assertIn(":1: E502", r.stderr)
+            self.assertEqual((r.returncode, r.stdout, r.stderr), (0, self.message + "\n", ""))
+            r = run_cli("compile", "--document", str(files["two-boms.ilang"]))
+            self.assertEqual((r.returncode, r.stdout), (0, compile_document([parse_L2(WORKED)]) + "\n"), r.stderr)
         # the same on standard input
         r = run_cli("compile", stdin=BOM + src)
         self.assertEqual((r.returncode, r.stdout), (0, self.message + "\n"), r.stderr)
+        r = run_cli("compile", stdin=BOM + BOM + src)
+        self.assertEqual((r.returncode, r.stdout), (0, self.message + "\n"), r.stderr)
+        r = run_cli("decompile", stdin=BOM + BOM + document)
+        self.assertEqual((r.returncode, r.stdout.splitlines()), (0, ["[READ]", "[BATC:READ]=>[Ω]"]), r.stderr)
+        # a mark that does not stand at the head of the input is not dropped: it reaches the parser
+        r = run_cli("compile", stdin=src + BOM + src)
+        self.assertEqual((r.returncode, r.stdout), (1, self.message + "\n"))
+        self.assertIn("<stdin>:2: E502", r.stderr)
         r = run_cli("decompile", stdin=BOM + document)
         self.assertEqual((r.returncode, r.stdout.splitlines()), (0, ["[READ]", "[BATC:READ]=>[Ω]"]), r.stderr)
         r = run_cli("decompile", "--version", "0.2", stdin=BOM + (compile(parse_L2(WORKED), version="0.2") + "\n").encode("utf-8"))

@@ -12,6 +12,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tests"))
 
 from iml import Chain, Decl, IMLError, Text, parse_doc, parse_L2, print_doc  # noqa: E402
+from iml.doc_parse import parse_doc_lines  # noqa: E402
 from validator_oracle import lint  # noqa: E402
 
 M = "::ILANG::v5.0\n"
@@ -165,6 +166,57 @@ class TestWording(unittest.TestCase):
             else:
                 self.assertIn(cm.exception.code, ("E302", "E304"), (c["label"], cm.exception.message, messages))
         self.assertGreaterEqual(same, 20)
+
+
+class TestReview050(unittest.TestCase):
+    """0.5.1: inputs of the adversarial review of v0.5.0 that parse_doc accepted and whose
+    canonical print reads back otherwise are refused where they stand, E300 at their own
+    line; the validator answers 0 errors on each (SPEC-IML-0.5.md section 9.1)."""
+
+    def test_full_width_colon_hidden_by_a_trailing_token(self):
+        for src in ("::GENE{b\uff1ac} src:x", "::LESSON{a|b\uff1ac} T:x|y"):
+            self.assertEqual(lint(M + src)[1], [])
+            with self.assertRaises(IMLError) as cm:
+                parse_doc(M + src)
+            self.assertEqual((cm.exception.code, cm.exception.offset), ("E300", len(M) + src.index("{")))
+            self.assertIn("full-width \uff1a as structural separator", cm.exception.message)
+        # a colon in the braces' own segment, or no token: as before
+        self.assertEqual(one("::GENE{b\uff1ac:d} src:x"), [Decl("GENE", head="b\uff1ac:d", body=[Text("src:x")])])
+        with self.assertRaises(IMLError):
+            parse_doc(M + "::GENE{b\uff1ac}")
+
+    def test_one_operation_chain_in_preamble_position(self):
+        for src in ("[\u03a3]", "[\u03a0:READ]", "[\u0394:@SRC]", "T[0]=1\n[\u03a3]", "[TYPE:x]\n\n[\u03a3]"):
+            doc = M + src
+            self.assertEqual(lint(doc)[1], [])
+            with self.assertRaises(IMLError) as cm:
+                parse_doc(doc)
+            self.assertEqual((cm.exception.code, cm.exception.offset), ("E300", doc.rindex("[")))
+            self.assertIn("a one-operation chain in preamble position prints as a tag line", cm.exception.message)
+        # a second operation, a place after the preamble, or a print that is no tag line: a chain
+        self.assertEqual(one("[\u03a3]=>[\u03a9]"), [parse_L2("[MERGE]=>[\u03a9]")])
+        self.assertEqual(one("::FACT{a:b}\n[\u03a3]"), [Decl("FACT", head="a:b"), parse_L2("[MERGE]")])
+        self.assertEqual(one("[\u03a9]"), [parse_L2("[\u03a9]")])
+        self.assertEqual(one("[READ|fmt=md]"), [parse_L2("[READ|fmt=md]")])
+        self.assertEqual(one("[MERGE]"), [Text("[MERGE]")])                  # a preamble tag line, as before
+
+    def test_a_text_line_keeps_its_inner_whitespace(self):
+        """Layout is indentation, blank and `---` lines, trailing whitespace and the whitespace
+        at the structural positions of declarations and chains; inside a line carried as a
+        text, whitespace is content, and a TAB there is E300."""
+        self.assertEqual(one("T[0]   ::LATENCY{0}  "), [Text("T[0]   ::LATENCY{0}")])
+        self.assertNotEqual(one("T[0]   ::LATENCY{0}"), one("T[0] ::LATENCY{0}"))
+        for src in ("T[0]\t::LATENCY{0}", "::LATENCY\t{0}"):
+            self.assertEqual(lint(M + src)[1], [])
+            with self.assertRaises(IMLError) as cm:
+                parse_doc(M + src)
+            self.assertEqual((cm.exception.code, cm.exception.offset), ("E300", len(M) + src.index("\t")))
+
+    def test_first_lines_of_the_items(self):
+        items, chains, lines = parse_doc_lines("::ILANG::v5.0\n\n::FACT{a:b}\n::GENE{g}\n  T:x\n  [READ]\n"
+                                               "    =>[\u03a9]\n---\n[FMT]\n  =>[\u03a9]\n")
+        self.assertEqual((len(items), lines), (4, [1, 3, 4, 9]))
+        self.assertEqual([no for no, _ in chains], [6, 9])
 
 
 if __name__ == "__main__":

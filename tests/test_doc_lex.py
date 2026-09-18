@@ -53,6 +53,8 @@ class TestDocLex(unittest.TestCase):
                 self.assertEqual(doc_lex.mask_quoted(s), self.ns["mask_quoted"](s))
                 self.assertEqual(doc_lex.head_of(s), linter.head_of(s))
                 self.assertEqual(doc_lex.is_body_form(s, self.verbs), linter.is_body_form(s))
+                ms = self.ns["mask_quoted"](s)          # the preamble test written inline in lint_region
+                self.assertEqual(doc_lex.is_tag_line(s), bool(self.ns["RE_TAG_LINE"].match(ms)) and "]=>" not in ms)
         for rest in ("{a}", "{a{b}c}", "{a}}", "{", "{a}{b}", "}"):
             self.assertEqual(doc_lex.find_close(rest), linter.find_close(rest), rest)
 
@@ -72,7 +74,8 @@ class TestDocLex(unittest.TestCase):
 
 IML_ONLY = {"MSG_UNTERMINATED", "MSG_CONTINUATION_SEPARATED", "MSG_OPAQUE_OPEN", "MSG_OPAQUE_TRAILING",
             "MSG_SET_HEADER", "MSG_TRAILING_DECL", "MSG_TRAILING_CONTINUATION", "MSG_NESTED_TWO_SEGMENTS",
-            "MSG_NESTED_FORM", "MSG_NESTED_B8", "MSG_CONTROL", "MSG_BOM"}
+            "MSG_NESTED_FORM", "MSG_NESTED_B8", "MSG_CONTROL", "MSG_BOM", "MSG_FULLWIDTH_TRAILING",
+            "MSG_PREAMBLE_CHAIN"}
 
 
 if __name__ == "__main__":

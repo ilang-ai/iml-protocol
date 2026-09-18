@@ -34,17 +34,21 @@ carries chains only: a text or declaration line there is E502.
 Both directions validate by round trip: the AST is printed (iml.doc_print) and read again
 (iml.doc_parse). An error there is reported as it is; an AST that reads back as another is
 E300, "not the canonical spelling of a construct" (a Text whose text is a registered
-declaration, for example, which must be coded as a declaration).
+declaration, for example, which must be coded as a declaration); a one-operation chain
+that reads back as the tag line it prints as gets the I-Lang reader's message for it
+(SPEC-IML-0.5.md section 4.2). Every error of these checks carries the index of the item
+it belongs to (IMLError.item).
 """
 
 import re
 
 from .codec import Chain, _compile_chain, is_control, quote, surface
 from .doc_ast import SHAPES, Decl, Text
-from .doc_lex import RE_DELIMITER
+from .doc_lex import MSG_PREAMBLE_CHAIN, RE_DELIMITER
 from .doc_parse import parse_doc
 from .doc_print import print_doc_lines
 from .errors import IMLError
+from .l2 import print_L2
 from .registry import DOCUMENT_LAYER_VERSIONS, HEADER_VERSION, default_registry
 
 RE_NAME = re.compile(r"[A-Z][A-Z0-9_]*")
@@ -66,7 +70,7 @@ def compile_doc(items, registry=None):
         try:
             lines.extend(encode_item(item, reg, sf))
         except IMLError as e:
-            raise IMLError(e.code, "item %d: %s" % (k, e.message), e.offset, e.op_index) from None
+            raise IMLError(e.code, "item %d: %s" % (k, e.message), e.offset, e.op_index, item=k) from None
     check_canonical(items, reg, None)
     return "\n".join(lines)
 
@@ -148,22 +152,29 @@ def encode_decl(d, reg, sf, nested):
 
 
 def check_canonical(items, reg, item_offsets):
-    """Print the AST and read it back: an error there is raised as it is (its offset moved
-    to the item's IML line when item_offsets is given); an AST that reads back as another
-    is E300."""
+    """Print the AST and read it back: an error there is raised as it is, with the index
+    of the item whose printed lines hold it (its offset moved to the item's IML line when
+    item_offsets is given); an AST that reads back as another is E300, naming the first
+    item that differs."""
     lines, owner = print_doc_lines(items, reg)
     printed = "\n".join(lines)
     try:
         back = parse_doc(printed, reg)
     except IMLError as e:
-        off = e.offset
-        if item_offsets is not None and off is not None:
-            k = owner[min(printed.count("\n", 0, off), len(owner) - 1)] if owner else 0
-            off = item_offsets[min(k, len(item_offsets) - 1)]
-        raise IMLError(e.code, e.message, off, e.op_index) from None
+        off, k = e.offset, None
+        if off is not None and owner:
+            k = owner[min(printed.count("\n", 0, off), len(owner) - 1)]
+            if item_offsets is not None:
+                off = item_offsets[min(k, len(item_offsets) - 1)]
+        raise IMLError(e.code, e.message, off, e.op_index, item=k) from None
     if back != items:
         k = next((j for j in range(min(len(back), len(items))) if back[j] != items[j]), min(len(back), len(items)))
         k = min(k, len(items) - 1)
+        off = item_offsets[k] if item_offsets else None
+        item = items[k]
+        if (isinstance(item, Chain) and len(item.ops) == 1 and k < len(back)
+                and back[k] == Text(print_L2(item))):
+            raise IMLError("E300", MSG_PREAMBLE_CHAIN, off, item=k)   # the message parse_doc gives the source
         seen = repr(back[k])[:80] if k < len(back) else "nothing"
-        raise IMLError("E300", NOT_CANONICAL % (k, seen), item_offsets[k] if item_offsets else None)
+        raise IMLError("E300", NOT_CANONICAL % (k, seen), off, item=k)
     return back

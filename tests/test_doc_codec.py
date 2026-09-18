@@ -2,17 +2,21 @@
 with the derived codes, the line grammar, headers and versions, hand-built ASTs, the
 round-trip validation of decompile, and the command line."""
 
+import contextlib
+import io
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from iml import (Chain, Decl, IMLError, Op, Text, compile, compile_doc, compile_document, decompile,  # noqa: E402
-                 decompile_doc, default_registry, parse_doc, parse_L2, print_doc)
+                 decompile_doc, default_registry, doc_codec, parse_doc, parse_L2, print_doc)
+from iml.__main__ import main  # noqa: E402
 
 H5 = "#iml/0.5/7e29fae7f5ea"
 H4 = "#iml/0.4/88d05d0839c1"
@@ -107,7 +111,8 @@ class TestDocumentForm(unittest.TestCase):
         for text, code in ((H4 + '\n:ST"a"', "E502"), ("#iml/0.3/88d05d0839c1\n\"x\"", "E502"),
                            (H4 + "\n RD", "E300"), (H5 + ' :ST"a"', "E502"), (H5 + ' "x"', "E502"),
                            ("#iml/0.5/88d05d0839c1\nRD", "E502"), ("#iml/0.2/88d05d0839c1\nRD", "E502"),
-                           (H5, "E300"), (H5 + "\n", "E300")):
+                           (H5, "E300"), (H5 + "\n", "E300"), (H4 + ' :ST"a"', "E502"),
+                           ('#iml/0.3/88d05d0839c1 "x"', "E502")):
             with self.assertRaises(IMLError) as cm:
                 decompile(text)
             self.assertEqual(cm.exception.code, code, text)
@@ -125,6 +130,37 @@ class TestDocumentForm(unittest.TestCase):
             self.assertIn("not the canonical spelling", cm.exception.message)
             self.assertIn(what, cm.exception.message)
             self.assertEqual(cm.exception.offset, len(H5) + 1)
+
+    def test_a_preamble_chain_is_refused_with_the_reader_s_message(self):
+        """0.5.1: a one-operation chain in preamble position whose print is a tag line; the
+        decoder refuses it with the message parse_doc gives the I-Lang source."""
+        for chain in ("[MERGE]", "[BATC:READ]", "[DIFF:@SRC]"):
+            line = compile(parse_L2(chain)).split(" ", 1)[1]
+            iml = H5 + '\n"::ILANG::v5.0"\n' + line
+            with self.assertRaises(IMLError) as cm:
+                decompile_doc(iml)
+            self.assertEqual((cm.exception.code, cm.exception.offset, cm.exception.item), ("E300", iml.rindex("\n") + 1, 1))
+            self.assertIn("a one-operation chain in preamble position prints as a tag line", cm.exception.message)
+            after = H5 + '\n"::ILANG::v5.0"\n:FC"a:b"\n' + line                 # after the preamble: a chain
+            self.assertEqual(decompile_doc(after)[2], parse_L2(chain))
+        with self.assertRaises(IMLError) as cm:
+            compile_doc([Text("::ILANG::v5.0"), parse_L2("[MERGE]")])
+        self.assertEqual((cm.exception.code, cm.exception.item), ("E300", 1))
+        self.assertIn("preamble position", cm.exception.message)
+
+    def test_messages_that_name_the_document_parts(self):
+        for text, fn, message in ((H5 + '\n"abc', decompile_doc, "unterminated quote in a text line"),
+                                  (H5 + '\n:FC"abc', decompile_doc, "unterminated quote in a declaration header"),
+                                  ('[READ|path="abc]', parse_L2, "unterminated quoted value"),
+                                  (H5, decompile, "header alone: a document carries at least one item line after the header"),
+                                  (H4, decompile, "header alone: a document carries at least one chain line after the header"),
+                                  (H4 + ' :GN"a"', decompile, "declarations and text lines need a 0.5 header (this message's"
+                                   " header is version 0.4)"),
+                                  ('#iml/0.3/88d05d0839c1 "x"', decompile, "declarations and text lines need a 0.5 header")):
+            with self.subTest(text=text):
+                with self.assertRaises(IMLError) as cm:
+                    fn(text)
+                self.assertTrue(cm.exception.message.startswith(message), cm.exception.message)
 
     def test_hand_built_asts_are_validated_on_compile(self):
         for items, code in (([], "E300"), ([Text("a\nb")], "E300"), ([Text("a\tb")], "E300"),
@@ -188,7 +224,48 @@ class TestDocumentCli(unittest.TestCase):
         r = run_cli("decompile", "--version", "0.5", stdin=H4 + "\nRD\n")
         self.assertEqual((r.returncode, r.stdout), (0, "[READ]\n"), r.stderr)
         r = run_cli("--version")
-        self.assertEqual(r.stdout.strip(), "iml 0.5.0")
+        self.assertEqual(r.stdout.strip(), "iml 0.5.1")
+
+
+class TestReportLines(unittest.TestCase):
+    """0.5.1: an error of the document writer's check, which reads the canonical print back,
+    is reported at the first source line of the item it names, by compile --document and by
+    roundtrip; 0.5.0 reported line 1 or a line counted in the print, and roundtrip line 0.
+    The check is made to fail by standing in for the reader it calls."""
+
+    SRC = "::ILANG::v5.0\n\n::FACT{a:b}\n::GENE{g}\n  T:x\n  T:y\n[READ]=>[\u03a9]\n"   # items at lines 1, 3, 4, 7
+
+    @staticmethod
+    def run_main(args):
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = main(args)
+        return code, out.getvalue(), err.getvalue()
+
+    def test_errors_of_the_canonical_check_name_the_item_s_first_line(self):
+        real = doc_codec.parse_doc
+
+        def reads_back_otherwise(text, reg=None):
+            back = real(text, reg)
+            back[2] = Decl("GENE", head="other")
+            return back
+
+        def fails_in_the_print(text, reg=None):
+            raise IMLError("E300", "probe", text.index("T:y"))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "doc.ilang"
+            p.write_bytes(self.SRC.encode("utf-8"))
+            self.assertEqual(self.run_main(["compile", "--document", str(p)])[0], 0)
+            for fake, message in ((reads_back_otherwise, "not the canonical spelling of a construct: item 2"),
+                                  (fails_in_the_print, "probe")):
+                with mock.patch("iml.doc_codec.parse_doc", fake):
+                    for args in (["compile", "--document", str(p)], ["roundtrip", str(p)]):
+                        with self.subTest(fake=fake.__name__, args=args[0]):
+                            code, out, err = self.run_main(args)
+                            self.assertEqual(code, 1)
+                            self.assertIn("%s:4: E300 Syntax Error: %s" % (p, message), err)
+                            self.assertNotIn("%s:0:" % p, err)
 
 
 if __name__ == "__main__":

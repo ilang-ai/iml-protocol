@@ -1620,5 +1620,122 @@
   "expect": "E502",
   "version": "0.5",
   "label": "a text line in a message"
+ },
+ {
+  "input": "::ILANG::v5.0\n::GENE{b：c} src:x\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "stricter: full-width colon hidden by a same-line trailing token"
+ },
+ {
+  "input": "::ILANG::v5.0\n::LESSON{a|b：c} T:x|y\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "stricter: full-width colon in a pipe segment hidden by a same-line trailing token"
+ },
+ {
+  "input": "::ILANG::v5.0\n[Σ]\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "stricter: one-operation chain in preamble position that prints as a tag line"
+ },
+ {
+  "input": "::ILANG::v5.0\nT[0]=1\n[Π:READ]\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "stricter: batch shorthand in preamble position after a bind"
+ },
+ {
+  "input": "::ILANG::v5.0\n[TYPE:x]\n[Δ:@SRC]\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "stricter: alias operation in preamble position after a tag line"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea\n\"::ILANG::v5.0\"\nMR",
+  "direction": "decompile-document",
+  "expect": "E300",
+  "version": "0.5",
+  "label": "a one-operation chain in preamble position that prints as a tag line"
+ },
+ {
+  "input": "::ILANG::v5.0\n::FACT{a:b}\n[READ|fmt=]\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "stricter: operation line outside the 0.4 subset: empty value"
+ },
+ {
+  "input": "::ILANG::v5.0\n::ACTIVATE{a}\n  [READ|path=\"a\\d\"]\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "stricter: operation line outside the 0.4 subset: bad escape"
+ },
+ {
+  "input": "::ILANG::v5.0\n::FACT{a:b}\n[Π:Ω]\n",
+  "direction": "compile-document",
+  "expect": "E502",
+  "label": "stricter: operation line outside the 0.4 subset: OUT as a verb reference"
+ },
+ {
+  "input": "::ILANG::v5.0\n::ACTIVATE{a}\n  [READ|ton=@Xmd]\n",
+  "direction": "compile-document",
+  "expect": "E200",
+  "label": "stricter: operation line outside the 0.4 subset: entity name outside [A-Z][A-Z0-9_]*"
+ },
+ {
+  "input": "::ILANG::v5.0\n::FACT{a:b}\n[READ|fmt=c:\\d]\n",
+  "direction": "compile-document",
+  "expect": "E303",
+  "label": "stricter: operation line outside the 0.4 subset: reserved character in a bare value"
+ },
+ {
+  "input": "::ILANG::v5.0\n::ACTIVATE{a}\n  [READ]=>FMT]\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "stricter: operation line outside the 0.4 subset: operation without its opening bracket"
+ },
+ {
+  "input": "::ILANG::v5.0\n::FACT{a:b}\n[READ|fmt=md,f]\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "stricter: operation line outside the 0.4 subset: modifier without `=`"
+ },
+ {
+  "input": "::ILANG::v5.0\n::ACTIVATE{a}\n  [READ]=>[OUT\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "stricter: operation line outside the 0.4 subset: unterminated operation"
+ },
+ {
+  "input": "::ILANG::v5.0\n::FACT{a:b}\n[READ|fmt=a|lng=b]\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "stricter: operation line outside the 0.4 subset: pipe between modifiers"
+ },
+ {
+  "input": "::ILANG::v5.0\nT[0]\t::LATENCY{0}\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "stricter: TAB inside a text line behind a temporal prefix"
+ },
+ {
+  "input": "::ILANG::v5.0\n::LATENCY\t{0}\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "stricter: TAB inside a tolerated annotation line"
+ },
+ {
+  "input": "#iml/0.4/88d05d0839c1 :GN\"a\"",
+  "direction": "decompile",
+  "expect": "E502",
+  "version": "0.4",
+  "label": "a declaration line in a 0.4 message"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1 \"x\"",
+  "direction": "decompile",
+  "expect": "E502",
+  "version": "0.3",
+  "label": "a text line in a 0.3 message"
  }
 ]

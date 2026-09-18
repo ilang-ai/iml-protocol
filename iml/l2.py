@@ -25,7 +25,8 @@ that holds a control character other than a newline has no I-Lang spelling: prin
 refuses it (E300) instead of writing a text that parse_L2 would refuse.
 
 ends_with_closed_operation is the condition under which the command line joins a
-continuation line to the text above it (SPEC-IML-0.4.md section 2.6).
+continuation line to the text above it (SPEC-IML-0.4.md section 2.6); ChainJoiner applies
+it line by line in linear time, for the compile side and for the document reader.
 """
 
 from .codec import (BATCH_VERB, Chain, Op, Value, RE_NAME, quote, scan_quoted,
@@ -65,24 +66,53 @@ def print_value(val, op_index=None):
     return val.text if ilang_bareable(val.text) else quote(val.text)
 
 
+class ChainJoiner:
+    """An operation line and its continuation lines, collected in linear time: the quote
+    and escape state of ends_with_closed_operation is kept from piece to piece, so no
+    piece is scanned twice, and the pieces are joined once, by text(). length is the
+    length of the text collected so far (the offset at which the next piece starts)."""
+    __slots__ = ("parts", "length", "quoted", "escaped", "prev")
+
+    def __init__(self, first=""):
+        self.parts, self.length = [], 0
+        self.quoted = self.escaped = False
+        self.prev = ""
+        if first:
+            self.add(first)
+
+    def add(self, piece):
+        quoted, escaped, prev = self.quoted, self.escaped, self.prev
+        for c in piece:
+            if quoted:
+                if escaped:
+                    escaped = False
+                elif c == "\\":
+                    escaped = True
+                elif c == '"':
+                    quoted = False
+            elif c == '"' and prev == "=":
+                quoted = True
+            prev = c
+        self.quoted, self.escaped, self.prev = quoted, escaped, prev
+        self.parts.append(piece)
+        self.length += len(piece)
+
+    def closed(self):
+        """ends_with_closed_operation of the text collected so far."""
+        return not self.quoted and self.prev == "]"
+
+    def text(self):
+        return "".join(self.parts)
+
+
 def ends_with_closed_operation(text):
     """True when text ends with `]` outside a quoted value, that is when the text so far
     is closed by an operation and a continuation line may be joined to it. Quotes are
     scanned by the rules parse_L2 applies (first_whitespace_outside_quotes): a quote opens
     a value only right after `=`, a backslash inside it escapes the next character, and
-    the next unescaped quote closes it. Nothing is judged here but the end of the text."""
-    quoted = escaped = False
-    for k, c in enumerate(text):
-        if quoted:
-            if escaped:
-                escaped = False
-            elif c == "\\":
-                escaped = True
-            elif c == '"':
-                quoted = False
-        elif c == '"' and k > 0 and text[k - 1] == "=":
-            quoted = True
-    return not quoted and text.endswith("]")
+    the next unescaped quote closes it. Nothing is judged here but the end of the text.
+    The joiners use ChainJoiner, which keeps this state across lines."""
+    return ChainJoiner(text).closed()
 
 
 def print_L2(chain):

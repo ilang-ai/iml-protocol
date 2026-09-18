@@ -39,8 +39,10 @@ not any vendor's billing. tiktoken is optional: when it cannot be imported or an
 cannot be loaded, the token columns are left out and the document says so.
 
 Also measured: RULE-SHEET.md as it stands on disk when the tool runs (its first line is
-quoted), with the 0.4, 0.3 and 0.2 sheets' figures copied from the earlier reports as the
-record. Not measured: the reply; the codec makes no model calls.
+quoted), and, as the record, the sheet at every release tag from v0.2.0 to v0.5.0, read with
+`git show <tag>:RULE-SHEET.md` and measured in the same units; a tag that cannot be read
+where the tool runs (no git, or a copy without its tags) gives a row marked not measured.
+Not measured: the reply; the codec makes no model calls.
 
 Usage: python tools/measure.py [--date YYYY-MM-DD] [--out PATH] [--note TEXT]
 """
@@ -48,6 +50,7 @@ Usage: python tools/measure.py [--date YYYY-MM-DD] [--out PATH] [--note TEXT]
 import argparse
 import datetime
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -79,15 +82,10 @@ ROW_LABEL = {
     DOC_04: "IML 0.4 document (record)",
     MSG_02: "IML 0.2 message (record)",
 }
-# The earlier rule sheets, from measurements/0.4-2026-09-18.md, 0.3-2026-09-18.md and 0.2-2026-09-18.md.
-RULE_SHEET_RECORDS = [
-    ("RULE-SHEET.md (0.4.1, record)", {"bytes": 6090, "chars": 6064, "cl100k_base": 1798, "o200k_base": 1796},
-     "measurements/0.4-2026-09-18.md"),
-    ("RULE-SHEET.md (0.3, record)", {"bytes": 5782, "chars": 5748, "cl100k_base": 1792, "o200k_base": 1794},
-     "measurements/0.3-2026-09-18.md"),
-    ("RULE-SHEET.md (0.2, record)", {"bytes": 5242, "chars": 5184, "cl100k_base": 1607, "o200k_base": 1599},
-     "measurements/0.2-2026-09-18.md"),
-]
+# The rule sheet of every earlier release, read from its tag (0.5.0 and earlier copied figures from the
+# earlier reports, and the 0.2 figure there, 1,607 cl100k_base tokens, matched no tagged sheet).
+RULE_SHEET_TAGS = ["v0.2.0", "v0.2.1", "v0.2.2", "v0.3.0", "v0.3.1", "v0.4.0", "v0.4.1", "v0.5.0"]
+NOT_MEASURED = "not measured"
 REPLY_NOTE = "Reply cost: not measured in 0.5, the codec makes no model calls"
 
 
@@ -123,6 +121,15 @@ def load_tokenizers():
         except Exception as e:
             notes.append("encoding %s could not be loaded (%s: %s); its column is absent" % (name, type(e).__name__, e))
     return encs, notes
+
+
+def tagged_sheet(tag):
+    """RULE-SHEET.md at a release tag, as text, or None when git or the tag is not there."""
+    try:
+        r = subprocess.run(["git", "show", "%s:RULE-SHEET.md" % tag], cwd=str(ROOT), capture_output=True)
+    except OSError:
+        return None
+    return r.stdout.decode("utf-8") if r.returncode == 0 else None
 
 
 def measure(text, encs):
@@ -311,11 +318,16 @@ def main(argv=None):
     if RULE_SHEET.exists():
         text = RULE_SHEET.read_text(encoding="utf-8")
         r = measure(text, encs)
-        L += ["`RULE-SHEET.md` as it stood on disk when this measurement ran, first line `%s`, same units; the earlier"
-              " sheets' figures are copied from %s as the record:" % (text.split("\n", 1)[0].strip(),
-                                                                    ", ".join("`%s`" % x[2] for x in RULE_SHEET_RECORDS)), ""]
-        table(L, "file", units, [("RULE-SHEET.md (as on disk)", [r[u] for u in units])]
-              + [(label, [rec.get(u, "-") for u in units]) for label, rec, _ in RULE_SHEET_RECORDS])
+        L += ["`RULE-SHEET.md` as it stood on disk when this measurement ran, first line `%s`, same units; the record"
+              " rows are the sheet at each release tag, read with `git show <tag>:RULE-SHEET.md` and measured here (a"
+              " row marked %s names a tag that could not be read where this tool ran):"
+              % (text.split("\n", 1)[0].strip(), NOT_MEASURED), ""]
+        rows = [("RULE-SHEET.md (as on disk)", [r[u] for u in units])]
+        for tag in RULE_SHEET_TAGS:
+            sheet = tagged_sheet(tag)
+            cells = [NOT_MEASURED] * len(units) if sheet is None else [measure(sheet, encs)[u] for u in units]
+            rows.append(("RULE-SHEET.md at tag `%s`" % tag, cells))
+        table(L, "file", units, rows)
     else:
         L.append("`RULE-SHEET.md` was not present when this measurement ran.")
     L.append("")

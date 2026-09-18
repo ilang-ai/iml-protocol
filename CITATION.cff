@@ -34,7 +34,7 @@ authors:
 repository-code: "https://github.com/ilang-ai/iml-protocol"
 url: "https://github.com/ilang-ai/iml-protocol"
 license: MIT
-version: "0.5.0"
+version: "0.5.1"
 date-released: 2026-09-18
 keywords:
   - I-Lang

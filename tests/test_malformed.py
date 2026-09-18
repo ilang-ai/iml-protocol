@@ -172,6 +172,27 @@ class TestMalformed(unittest.TestCase):
         stricter = [c for c in docs if c.get("label", "").startswith("stricter:")]
         self.assertGreaterEqual(len(stricter), 10)
 
+    def test_0_5_1_cases_cover_the_review_of_0_5_0(self):
+        """The review of v0.5.0 (SPEC-IML-0.5.md section 9.1): a full-width colon that a
+        same-line trailing token hides, a one-operation chain in preamble position whose
+        print is a tag line (in both directions), the operation lines outside the 0.4 subset
+        that the validator lets pass, with their IML codes, a TAB inside a text line, and a
+        declaration or text line in a 0.4 or 0.3 message (E502, as in a document)."""
+        docs = {c["input"]: (c["expect"], c["label"]) for c in self.cases if c["direction"] == "compile-document"}
+        m = "::ILANG::v5.0\n"
+        for src in ("::GENE{b\uff1ac} src:x\n", "::LESSON{a|b\uff1ac} T:x|y\n", "[\u03a3]\n", "T[0]=1\n[\u03a0:READ]\n",
+                    "[TYPE:x]\n[\u0394:@SRC]\n", "T[0]\t::LATENCY{0}\n", "::LATENCY\t{0}\n"):
+            self.assertEqual(docs.get(m + src, ("-", "-"))[0], "E300", src)
+            self.assertTrue(docs[m + src][1].startswith("stricter:"), src)
+        outside = [e for e, lab in docs.values() if lab.startswith("stricter: operation line outside the 0.4 subset")]
+        self.assertEqual((len(outside), set(outside)), (9, {"E300", "E502", "E200", "E303"}))
+        preamble = [c for c in self.cases if c["direction"] == "decompile-document" and "preamble" in c.get("label", "")]
+        self.assertEqual(sorted((c["input"].split("\n")[-1], c["expect"]) for c in preamble),
+                         [("MR", "E300"), ("RD@SR", "E300")])                  # RD@SR since 0.5.0
+        messages = {(c["version"], c["input"]): c["expect"] for c in self.cases if c["direction"] == "decompile"}
+        self.assertEqual(messages.get(("0.4", H04 + ':GN"a"')), "E502")
+        self.assertEqual(messages.get(("0.3", '#iml/0.3/88d05d0839c1 "x"')), "E502")
+
     def test_validator_oracle_on_the_document_cases(self):
         """Every compile-document case that opens with a `::ILANG::` marker is linted in raw
         mode: the validator rejects it (at least one ERROR) exactly when its label does not

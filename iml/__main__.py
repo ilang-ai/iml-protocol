@@ -33,15 +33,19 @@
   check-registry [PATH]   load the registry (default: the 0.5 registry, paired with the
                           0.2 chain registry), verify the digests, print the counts
 
-FILE `-` or no FILE reads standard input. Input is UTF-8. One leading byte order mark
-(EF BB BF, which Windows PowerShell 5.1 puts in front of text it pipes as UTF-8) is
-dropped, on standard input and on FILE; the library functions stay strict and refuse a
+FILE `-` or no FILE reads standard input. Input is UTF-8. Every leading byte order mark
+(EF BB BF) is dropped, on standard input and on FILE: Windows PowerShell 5.1 puts one in
+front of text it pipes as UTF-8, and two when [Console]::InputEncoding and
+$OutputEncoding are both set to UTF-8. The library functions stay strict and refuse a
 U+FEFF at the head of their input (E502). Input that is not valid UTF-8 is E300,
 reported at line 1 with the byte offset. `\\r\\n` is accepted as a line end. Blank
 lines are skipped in I-Lang input (where they end a chain, and where a line of
 whitespace only counts as blank) and in a stream of messages; inside an IML document a
 blank line is an error. The codec fails closed: the first error stops the command with
-exit code 1 and `<file>:<line>: <error>` on standard error.
+exit code 1 and `<file>:<line>: <error>` on standard error. An error of the document
+writer's check, which reads the canonical print back (SPEC-IML-0.5.md section 6), is
+reported at the first source line of the item it names, by compile --document and by
+roundtrip alike.
 """
 
 import sys
@@ -54,7 +58,7 @@ from .doc_parse import parse_doc, parse_doc_lines
 from .doc_print import print_doc
 from .doc_read import decompile_doc
 from .errors import IMLError
-from .l2 import CONTINUATION, ends_with_closed_operation, parse_L2, print_L2
+from .l2 import CONTINUATION, ChainJoiner, parse_L2, print_L2
 from .registry import DOCUMENT_LAYER_VERSIONS, RegistryError, default_registry, load_registry
 
 
@@ -73,11 +77,13 @@ class InputError(Exception):
 
 
 def read_text(path):
-    """(name, text) of FILE or of standard input. The bytes are decoded as UTF-8 and one
+    """(name, text) of FILE or of standard input. The bytes are decoded as UTF-8 and every
     leading byte order mark (EF BB BF) is dropped: Windows PowerShell 5.1 puts one in
-    front of text it pipes as UTF-8, and some editors save one. Only the command line is
-    lenient here; parse_L2 and decompile refuse a U+FEFF (E502). Bytes that are not
-    valid UTF-8 raise InputError with E300 and the byte offset in the input as read."""
+    front of text it pipes as UTF-8, two when [Console]::InputEncoding and
+    $OutputEncoding are both set to UTF-8, and some editors save one. Only the command
+    line is lenient here; parse_L2 and decompile refuse a U+FEFF (E502). Bytes that are
+    not valid UTF-8 raise InputError with E300 and the byte offset in the input as read,
+    the dropped marks included."""
     if path is None or path == "-":
         raw = sys.stdin.buffer.read()
         name = "<stdin>"
@@ -86,12 +92,10 @@ def read_text(path):
             raw = f.read()
         name = path
     try:
-        data = raw.decode("utf-8-sig")
+        data = raw.decode("utf-8")
     except UnicodeDecodeError as e:
-        # utf-8-sig reports the position after the byte order mark it dropped
-        offset = e.start + len(raw) - len(e.object)
-        raise InputError(name, IMLError("E300", "input is not valid UTF-8 (byte offset %d)" % offset)) from None
-    return name, data
+        raise InputError(name, IMLError("E300", "input is not valid UTF-8 (byte offset %d)" % e.start)) from None
+    return name, data.lstrip("\ufeff")
 
 
 def non_empty_lines(data):
@@ -131,31 +135,32 @@ def join_chain_lines(data):
     it is kept as its own entry, stripped, so that parse_L2 reports it at its own line
     as E300 "orphan `=>` continuation: no preceding operation line"; it opens no chain.
     So a chain's line number is its first line and an error offset counts in the
-    joined text."""
-    out = []
-    open_chain = False
+    joined text. The join is linear in the length of the input (ChainJoiner keeps the
+    quote state from line to line and joins the pieces once)."""
+    entries = []        # [first line, a ChainJoiner, the IMLError that refused the chain, or an orphan's text]
+    cur = None          # the entry of the chain that `=>` lines extend
     for no, line in enumerate(data.split("\n"), start=1):
         if line.endswith("\r"):
             line = line[:-1]
         stripped = line.lstrip()
         if not stripped:                      # blank, or whitespace only
-            open_chain = False
+            cur = None
             continue
         if stripped.startswith(CONTINUATION):
-            if not open_chain:
-                out.append((no, stripped))
+            if cur is None:
+                entries.append([no, stripped])
                 continue
-            first, text = out[-1]
-            if isinstance(text, IMLError):    # the chain is already refused
+            joiner = cur[1]
+            if isinstance(joiner, IMLError):  # the chain is already refused
                 continue
-            if ends_with_closed_operation(text):
-                out[-1] = (first, text + stripped)
+            if joiner.closed():
+                joiner.add(stripped)
             else:
-                out[-1] = (first, IMLError("E300", UNTERMINATED, len(text)))
+                cur[1] = IMLError("E300", UNTERMINATED, joiner.length)
             continue
-        out.append((no, line))
-        open_chain = True
-    return out
+        cur = [no, ChainJoiner(line)]
+        entries.append(cur)
+    return [(no, x.text() if isinstance(x, ChainJoiner) else x) for no, x in entries]
 
 
 def parse_chain(text):
@@ -179,16 +184,32 @@ def line_of(data, err):
     return data.count("\n", 0, err.offset) + 1 if err.offset is not None else 1
 
 
+def error_line(data, err, item_lines):
+    """The 1-based line at which an error of a document is reported. An error that names
+    a top-level item (IMLError.item: the document writer's check, which reads the
+    canonical print back) is reported at that item's first source line, item_lines being
+    what parse_doc_lines returned; any other error at the line of its offset in data. In
+    the document pass of roundtrip (data None: the offsets there count in IML or in the
+    print) an error that names no item is reported at the first item's line. Never 0."""
+    k = err.item
+    if item_lines and k is not None and 0 <= k < len(item_lines):
+        return item_lines[k]
+    if data is not None:
+        return line_of(data, err)
+    return item_lines[0] if item_lines else 1
+
+
 def cmd_compile(path, document):
     name, data = read_text(path)
     if document:
+        item_lines = None
         try:
-            items = parse_doc(data)
+            items, _, item_lines = parse_doc_lines(data)
             if not items:
                 raise IMLError("E300", "no I-Lang item to compile: a document carries at least one item", 0)
             text = compile_doc(items)
         except IMLError as e:
-            report(name, line_of(data, e), e)
+            report(name, error_line(data, e, item_lines), e)
             return 1
         print(text)
         return 0
@@ -225,7 +246,7 @@ def cmd_decompile(path, version):
 def cmd_roundtrip(path):
     name, data = read_text(path)
     try:
-        items, chain_lines = parse_doc_lines(data)
+        items, chain_lines, item_lines = parse_doc_lines(data)
     except IMLError as e:
         report(name, line_of(data, e), e)
         return 1
@@ -253,7 +274,7 @@ def cmd_roundtrip(path):
             ok = (back == items and compile_doc(back) == document and parse_doc(printed) == items
                   and print_doc(parse_doc(printed)) == printed)
         except IMLError as e:
-            report(name, 0, e)
+            report(name, error_line(None, e, item_lines), e)
             return 1
         decls = sum(1 for x in items if isinstance(x, Decl))
         texts = sum(1 for x in items if isinstance(x, Text))

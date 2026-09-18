@@ -22,7 +22,7 @@ from .doc_lex import (MSG_BODY_BRACKET, MSG_BODY_ORPHAN, MSG_BODY_PROSE, MSG_CON
                       RE_TAG_LINE, RE_TAG_TEXT, RE_TEMPORAL_BIND, RE_TEMPORAL_NOTE, RE_TEMPORAL_PREFIX,
                       find_close, is_body_form, is_operation_line, mask_quoted)
 from .errors import IMLError
-from .l2 import ends_with_closed_operation, parse_L2
+from .l2 import ChainJoiner, parse_L2
 
 
 def indent_of(line):
@@ -175,9 +175,10 @@ class _BodyReader:
         """The operation line i (stripped text s) and the `=>` lines directly below it,
         joined as the 0.4.1 rule joins them (SPEC-IML-0.4.md section 2.6). At top level
         (header_indent None) a continuation line may stand at any indentation; in a body it
-        must stay in the body. Returns (Chain, next line index)."""
+        must stay in the body. The join is linear in the length of the chain (ChainJoiner).
+        Returns (Chain, next line index)."""
         lines, n = self.lines, len(self.lines)
-        text, segs = s, [(0, self.line_off(i))]
+        joiner, segs = ChainJoiner(s), [(0, self.line_off(i))]
         j = i + 1
         while j < n:
             ln = lines[j]
@@ -186,12 +187,12 @@ class _BodyReader:
                 break
             if header_indent is not None and indent_of(ln) <= header_indent:
                 break
-            if not ends_with_closed_operation(text):
+            if not joiner.closed():
                 raise IMLError("E300", MSG_UNTERMINATED, self.line_off(j))
-            segs.append((len(text), self.line_off(j)))
-            text += t
+            segs.append((joiner.length, self.line_off(j)))
+            joiner.add(t)
             j += 1
-        return self.parse_chain_text(text, segs, i), j
+        return self.parse_chain_text(joiner.text(), segs, i), j
 
     def parse_chain_text(self, text, segs, i):
         try:

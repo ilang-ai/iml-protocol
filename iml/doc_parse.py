@@ -7,23 +7,31 @@ Lines are split on `\\n` and one `\\r` before it is dropped. A raw control chara
 E300 anywhere except a TAB in layout (indentation, trailing whitespace, and the whitespace
 the validator strips: between a temporal prefix and `::`, between a declaration name and
 its `{`, between a closing brace and a trailing body token); a TAB inside carried text is
-E300. A U+FEFF at the head of the input is E502 (the command line drops one).
+E300, and a line carried as a text keeps the whitespace inside it as content, so a TAB
+there is E300 too (`T[0]`, a TAB and `::LATENCY{0}`). A U+FEFF at the head of the input
+is E502 (the command line drops every leading one). Two readings are IML's own
+(SPEC-IML-0.5.md section 9.1), because the canonical print would read back otherwise: with
+a same-line trailing body token the full-width check also runs on the braces alone, and a
+one-operation chain in preamble position whose print is a tag line is E300.
 
 parse_doc returns a list of items (Chain, Decl, Text). parse_doc_lines also returns the
-chains with the numbers of their first lines, for the command line's roundtrip report.
+chains with the numbers of their first lines, for the command line's roundtrip report, and
+the first line number of every top-level item, at which the command line reports an error
+of the canonical check that names that item.
 """
 
 from .codec import is_control
 from .doc_ast import Decl, Text
 from .doc_body import _BodyReader, indent_of
-from .doc_lex import (MSG_BOM, MSG_BRACKET_LINE, MSG_CONTROL, MSG_DOUBLE, MSG_ENTITY, MSG_LACKS_BRACE,
-                      MSG_MALFORMED_HEADER, MSG_MALFORMED_MARKER, MSG_MARKER_POSITION, MSG_NO_PRODUCTION,
-                      MSG_OPAQUE_OPEN, MSG_OPAQUE_TRAILING, MSG_ORPHAN, MSG_SET_HEADER, MSG_SPAN_OPEN,
-                      MSG_TWO_SEGMENTS, MSG_UNREGISTERED, RE_BAD_DECL_HEAD, RE_DECL_HEAD, RE_DELIMITER,
-                      RE_DOC_MARKER, RE_DOUBLE_INLINE, RE_DOUBLE_SPAN, RE_TAG_LINE, RE_TEMPORAL_BIND,
-                      RE_TEMPORAL_NOTE, RE_TEMPORAL_PREFIX, STRUCTURAL_CHARS, bad_entity, find_close,
-                      fullwidth_message, is_operation_line, mask_quoted)
+from .doc_lex import (MSG_BOM, MSG_BRACKET_LINE, MSG_CONTROL, MSG_DOUBLE, MSG_ENTITY, MSG_FULLWIDTH_TRAILING,
+                      MSG_LACKS_BRACE, MSG_MALFORMED_HEADER, MSG_MALFORMED_MARKER, MSG_MARKER_POSITION,
+                      MSG_NO_PRODUCTION, MSG_OPAQUE_OPEN, MSG_OPAQUE_TRAILING, MSG_ORPHAN, MSG_PREAMBLE_CHAIN,
+                      MSG_SET_HEADER, MSG_SPAN_OPEN, MSG_TWO_SEGMENTS, MSG_UNREGISTERED, RE_BAD_DECL_HEAD,
+                      RE_DECL_HEAD, RE_DELIMITER, RE_DOC_MARKER, RE_DOUBLE_INLINE, RE_DOUBLE_SPAN, RE_TAG_LINE,
+                      RE_TEMPORAL_BIND, RE_TEMPORAL_NOTE, RE_TEMPORAL_PREFIX, STRUCTURAL_CHARS, bad_entity,
+                      find_close, fullwidth_message, is_operation_line, is_tag_line, mask_quoted)
 from .errors import IMLError
+from .l2 import print_L2
 from .registry import default_registry
 
 NESTABLE_CLASSES = ("v3", "v4", "v5", "amended", "narrative")   # the validator's DECL_STRUCTURAL | DECL_NARRATIVE
@@ -35,11 +43,12 @@ def parse_doc(text, registry=None):
 
 
 def parse_doc_lines(text, registry=None):
-    """(items, [(first line number, Chain)]) for every chain of the document, top level and
-    body, in document order."""
+    """(items, [(first line number, Chain)] for every chain of the document, top level and
+    body, in document order, [first line number of every top-level item]); line numbers
+    are 1-based."""
     p = DocParser(text, registry)
     items = p.parse()
-    return items, p.chain_lines
+    return items, p.chain_lines, p.item_lines
 
 
 class DocParser(_BodyReader):
@@ -68,6 +77,7 @@ class DocParser(_BodyReader):
             self.starts.append(pos)
             pos += len(seg) + 1
         self.chain_lines = []
+        self.item_lines = []
         self.body_op_seen = False
 
     # ------------------------------------------------------------ helpers
@@ -107,6 +117,7 @@ class DocParser(_BodyReader):
             if not s or s == "---":
                 i += 1
                 continue
+            self.item_lines.append(i + 1)         # every other line opens one item or raises
             if RE_DOC_MARKER.match(s):
                 if i == first_nb:
                     in_preamble = True
@@ -129,15 +140,19 @@ class DocParser(_BodyReader):
                 raise IMLError("E300", MSG_ORPHAN, off)
             if s.startswith("["):
                 ms = mask_quoted(s)
-                if in_preamble_here and RE_TAG_LINE.match(ms) and "]=>" not in ms:
+                if in_preamble_here and is_tag_line(s):
                     in_preamble = True            # a preamble tag line: metadata, even when TAG is a verb name
                     items.append(self.text(s, off))
                     i += 1
                     continue
                 if is_operation_line(s, self.verbs):
                     seen_construct = True
-                    chain, i = self.join_chain(i, s, None)
+                    chain, j = self.join_chain(i, s, None)
+                    if in_preamble_here and len(chain.ops) == 1 and is_tag_line(print_L2(chain)):
+                        # `[Σ]`, `[Π:READ]`: the print, `[MERGE]`, `[BATC:READ]`, would read back as a tag line
+                        raise IMLError("E300", MSG_PREAMBLE_CHAIN, off)
                     items.append(chain)
+                    i = j
                     continue
                 if RE_TAG_LINE.match(ms):
                     items.append(self.text(s, off))
@@ -205,6 +220,12 @@ class DocParser(_BodyReader):
         close = find_close(rest)
         head, trailing = rest[1:close], rest[close + 1:].strip()
         self.check_carried(head, "the header of ::%s" % name, rest_off)
+        if trailing:
+            # the validator checks the whole rest, where an ASCII colon of the token can hide a
+            # full-width one of the braces; the print moves the token to a body line
+            fw = fullwidth_message("{" + head + "}")
+            if fw:
+                raise IMLError("E300", fw + MSG_FULLWIDTH_TRAILING, rest_off)
         dm = RE_DELIMITER.search(rest) if name == "UNTRUSTED" else None
         if dm:
             if trailing:

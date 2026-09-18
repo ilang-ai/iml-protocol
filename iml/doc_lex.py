@@ -76,6 +76,13 @@ def is_operation_line(s, verbs):
     return "]=>" in mask_quoted(s) or head_of(s) in verbs
 
 
+def is_tag_line(s):
+    """A tag line as the preamble reads it (PATCH-2 1.7): RE_TAG_LINE on the masked line,
+    and no `]=>` in it."""
+    ms = mask_quoted(s)
+    return bool(RE_TAG_LINE.match(ms)) and "]=>" not in ms
+
+
 def is_body_form(s, verbs):
     """B1 to B5 and `T[n]=` shapes, the lines that bind as a flush-left body (PATCH-2 1.1
     FLUSH-LEFT-BODY). An operation (B8) and a `=>` line are not among them."""
@@ -160,4 +167,10 @@ MSG_NESTED_FORM = ("nested ::%s: a nested declaration takes the brace form on on
 MSG_NESTED_B8 = ("the body of nested ::%s carries B1 to B6 lines only: an operation line (B8) or a `=>`"
                  " line there is not carried")
 MSG_CONTROL = "raw control character U+%04X in %s (IML quoted strings have no escape for it)"
-MSG_BOM = "a byte order mark (U+FEFF) at the head of the input: the command line drops one, the library does not"
+MSG_BOM = ("a byte order mark (U+FEFF) at the head of the input: the command line drops every leading one,"
+           " the library does not")
+MSG_FULLWIDTH_TRAILING = ("; with a same-line trailing body token the braces are checked alone, since the token"
+                          " becomes a body line in the print")
+MSG_PREAMBLE_CHAIN = ("a one-operation chain in preamble position prints as a tag line (PATCH-2 \u00a71.7 preamble),"
+                      " which reads back as metadata: write it after the preamble, below a line that is neither a"
+                      " tag line nor a `T[n]=value` bind, or give it a second operation")

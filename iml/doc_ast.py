@@ -26,9 +26,12 @@ Decl(name, sub, prefix, addr, shape, head, body, lines): one declaration.
           its closing `}`); opaque: the verbatim lines between the header and the
           delimiter line; () otherwise
 
-Layout is not carried: blank lines, `---` lines, indentation widths, flush-left against
-indented bodies, the position of a same-line trailing body token, and the whitespace
-between a temporal prefix and `::`.
+Layout is not carried: indentation (its width, flush-left against indented bodies), blank
+and `---` lines, trailing whitespace, and the whitespace at the structural positions of
+declarations and chains (between a temporal prefix and `::`, between a name and its `{`,
+after a closing brace, so the position of a same-line trailing body token, and before a
+chain line and its continuation lines). The whitespace inside a line carried as a Text is
+content (SPEC-IML-0.5.md section 4.1).
 """
 
 SHAPES = ("brace", "set", "wrapped", "opaque")
