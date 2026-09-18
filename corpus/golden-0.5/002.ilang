@@ -1,0 +1,20 @@
+::ILANG::v5.0
+::STATE{@OPUS, role:strategic_review}
+::STATE{@OPUS, MEMORY:intact}
+::TRUST{@SUN→@OPUS, 0.95}
+
+::GENE{verify_first|conf:confirmed|scope:global}
+  T:check_before_execute
+  T:architecture_review|when:new_project
+  A:blind_execution⇒fatal
+
+::FACT{key:preferred_stack|value:react,node,go|conf:confirmed}
+::FACT{key:deploy_target|value:cloudflare_workers|conf:3/5}
+
+::LESSON{id:middleware_order|type:debug|scope:project|conf:confirmed}
+  Express middleware order matters. Auth before route handlers.
+
+::RULE{task_complexity>3_steps⇒activate_plan_breakdown}
+::ACTIVATE{auto_quality}
+  ON:feature_complete
+  ON:before_commit

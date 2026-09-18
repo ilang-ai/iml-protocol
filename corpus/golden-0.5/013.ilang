@@ -1,0 +1,36 @@
+::ILANG::v5.0
+::GRAMMAR{shape:inline|conf:confirmed}
+T:form=`::DECL{field:value|field:value}`
+T:terminates_at_closing_brace_on_same_line
+T:no_body
+E:`::IMMUNE{prompt_injection⇒REJECT}`
+E:`::FACT{key:deploy_target|value:cloudflare_workers|conf:3/5}`
+
+::GRAMMAR{shape:header_body|conf:confirmed}
+T:form=`::DECL{header}` + one_or_more_indented_body_lines
+T:body_indent>header_indent|any_consistent_width
+T:terminates_at_first_line_with_indent≤header_indent|OR_blank_line_followed_by_unindented_line|OR_EOF
+T:blank_lines_inside_body_permitted_if_next_nonblank_line_still_indented
+E:`::GENE{verify_first|conf:confirmed|scope:global}` + `  T:check_before_execute`
+
+::GRAMMAR{shape:brace_span|conf:confirmed}
+T:form=`::DECL{` + content_lines + `}`_on_own_line
+T:terminates_at_closing_brace_line|indentation_not_significant
+T:braces_embedded_in_content_lines_are_content_not_structure
+T:wrapped_field_header|content_after_opening_brace_on_header_line⇒terminates_at_first_line_ending_with_`}`|v3.0_§10.3_style
+T:used_when_content_is_a_set_rather_than_fields
+E:`::PRIORITY{` … `}` , `::DECAY{` … `}` , `::MODULE::NAME{` … `}`
+
+::CLAUSE{SHAPE-SELECTION|conf:confirmed|scope:v5}
+T:parser_selects_shape_by_lookahead|closing_brace_on_header_line⇒inline
+T:unclosed_brace_on_header_line⇒brace_span
+T:closed_brace_plus_indented_next_line⇒header_body
+T:closed_brace_plus_same_indent_body_form_line⇒header_body|see_FLUSH-LEFT-BODY_below
+A:mixing_brace_span_and_header_body_in_one_declaration⇒E300
+
+::CLAUSE{FLUSH-LEFT-BODY|conf:confirmed|scope:v5}
+T:a_header_line_immediately_followed_by_lines_matching_body_forms_B1-B5_at_the_same_indent⇒header_body
+T:flush_left_body_terminates_at_first_blank_line_OR_next_`::`_header_line
+T:a_single_body_form_token_MAY_trail_the_header_on_the_same_line|whitespace_separated|e.g._PATCH-1_§2_::MODE_lines
+T:codifies_canon_layout|clause_blocks_of_PATCH-1_and_PATCH-2+frozen_JUDGE_serialization_PATCH-1_§4
+A:applying_body_indent>header_indent_to_flush_left_bodies⇒false_reject

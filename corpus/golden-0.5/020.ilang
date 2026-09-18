@@ -1,0 +1,25 @@
+::ILANG::v5.0
+::THINK{@SUN}{first_line
+  second_line
+  last_line}
+::DISCOVER{@SUN}{
+  LAYER[a] ⇒ LAYER[b]
+}
+::ACTIVATE{auto_run} [READ:@SRC]=>[Ω]
+::MODE{M2|name:ASK_FIRST} T:ask_when_ambiguous
+::SILENCE{}
+::FACT{key:empty_body|value:none}
+
+[NOTE:a_tag_line_after_a_blank_line]
+::LESSON{id:nested_narrative|type:soul|scope:book|conf:confirmed}
+  ::SAY{@A→@B}{hello}
+    T:said_first
+  ::MODULE::INNER{a_nested_module}
+    [WHAT] a tag line in a nested module
+    free prose in a nested module
+  ::LATENCY{0}
+::UNTRUSTED{id:u2|source:web|role:context}
+  src:https://example.com/page
+::GENE_MUTABLE{communication_style|
+  T:conclusions_first|
+}

@@ -1,0 +1,13 @@
+#iml/0.5/7e29fae7f5ea
+"::ILANG::v5.0"
+:AC"build_feature"
+ "ON:user_request"
+:RL"scope>2hr⇒activate_plan_breakdown"
+PL@SRle=5-15 $
+:PR"date:2026-04-20|done:plan_approved|next:build_auth"
+CE@LCpt=auth/login.go TS RV $
+CE@LCpt=auth/register.go TS RV $
+:PR"date:2026-04-20|done:auth_module|next:deploy"
+DP@WR CKwh=status:200 $
+:LS"id:go_middleware|type:build|scope:project|conf:confirmed"
+ "Auth middleware must be registered before route handlers."

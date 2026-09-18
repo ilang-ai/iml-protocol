@@ -1,0 +1,5 @@
+::ILANG::v5.0
+::GENE_MUTABLE{communication_style|
+  T:conclusions_first|
+  G:{Claude:0.9,Gemini:0.5,DeepSeek:0.7}|
+  Θ:task_type=report}

@@ -1,0 +1,1156 @@
+{
+  "aliases": {
+    "Δ": "DIFF",
+    "Π": "BATC",
+    "Σ": "MERGE",
+    "Ω": "OUT",
+    "ζ": "CMPR",
+    "θ": "XLAT",
+    "λ": "MAP",
+    "μ": "STAT",
+    "ξ": "HASH",
+    "φ": "FILT",
+    "ψ": "SENT",
+    "∂": "SPLIT",
+    "∇": "SORT"
+  },
+  "canon": {
+    "commit": "127ba56f4eb1f35c2951d4aec4b7bd22831119ff",
+    "files": {
+      "SPEC-v4.1-MEDIA-PROFILE.md": "0076bbf85c0af52c7a9a10e9ee88ed35f45e793d66fe9ee0cfc63c742f3c50f9",
+      "SPEC.md": "c5607785493460ab90fa345d4f01c80166414e00a0fd930797c7c731428ac2d3",
+      "archive/SPEC-v5.0-PATCH-2.md": "12143a8386e08db4b2460dbe0c608c48be46900d4460d4855905358737628094",
+      "ilang_grammar_validator.py": "3c29df9089401fed742bb6448c6c7dc7b72c811cdd90eca05696d7b6db62f4ad"
+    }
+  },
+  "declarations": [
+    {
+      "class": "v3",
+      "code": "ST",
+      "double": false,
+      "name": "STATE",
+      "prose": false
+    },
+    {
+      "class": "v3",
+      "code": "TR",
+      "double": false,
+      "name": "TRUST",
+      "prose": false
+    },
+    {
+      "class": "v3",
+      "code": "AL",
+      "double": false,
+      "name": "ALIVE",
+      "prose": false
+    },
+    {
+      "class": "v3",
+      "code": "MM",
+      "double": false,
+      "name": "MEMORY",
+      "prose": false
+    },
+    {
+      "class": "v3",
+      "code": "GN",
+      "double": false,
+      "name": "GENE",
+      "prose": false
+    },
+    {
+      "class": "v3",
+      "code": "GM",
+      "double": false,
+      "name": "GENE_MUTABLE",
+      "prose": false
+    },
+    {
+      "class": "v3",
+      "code": "RL",
+      "double": false,
+      "name": "RULE",
+      "prose": true
+    },
+    {
+      "class": "v3",
+      "code": "AC",
+      "double": false,
+      "name": "ACTIVATE",
+      "prose": false
+    },
+    {
+      "class": "v3",
+      "code": "FC",
+      "double": false,
+      "name": "FACT",
+      "prose": false
+    },
+    {
+      "class": "v3",
+      "code": "LS",
+      "double": false,
+      "name": "LESSON",
+      "prose": true
+    },
+    {
+      "class": "v3",
+      "code": "PR",
+      "double": false,
+      "name": "PROGRESS",
+      "prose": false
+    },
+    {
+      "class": "v3",
+      "code": "PT",
+      "double": false,
+      "name": "PRIORITY",
+      "prose": false
+    },
+    {
+      "class": "v3",
+      "code": "DC",
+      "double": false,
+      "name": "DECAY",
+      "prose": false
+    },
+    {
+      "class": "v3",
+      "code": "IM",
+      "double": false,
+      "name": "IMMUNE",
+      "prose": false
+    },
+    {
+      "class": "v4",
+      "code": "UN",
+      "double": false,
+      "name": "UNTRUSTED",
+      "prose": false
+    },
+    {
+      "class": "v4",
+      "code": "BD",
+      "double": false,
+      "name": "BUDGET",
+      "prose": false
+    },
+    {
+      "class": "v4",
+      "code": "SS",
+      "double": false,
+      "name": "STATUS",
+      "prose": false
+    },
+    {
+      "class": "v4",
+      "code": "OB",
+      "double": false,
+      "name": "OBJECTIVE",
+      "prose": true
+    },
+    {
+      "class": "v4",
+      "code": "RB",
+      "double": false,
+      "name": "RUBRIC",
+      "prose": false
+    },
+    {
+      "class": "v4",
+      "code": "EV",
+      "double": false,
+      "name": "EVIDENCE",
+      "prose": false
+    },
+    {
+      "class": "v4",
+      "code": "PI",
+      "double": false,
+      "name": "PRIOR",
+      "prose": false
+    },
+    {
+      "class": "v4",
+      "code": "FL",
+      "double": false,
+      "name": "FALLBACK",
+      "prose": false
+    },
+    {
+      "class": "v5",
+      "code": "JD",
+      "double": false,
+      "name": "JUDGE",
+      "prose": false
+    },
+    {
+      "class": "v5",
+      "code": "BN",
+      "double": false,
+      "name": "BOUNDARY",
+      "prose": false
+    },
+    {
+      "class": "v5",
+      "code": "DM",
+      "double": false,
+      "name": "DIM",
+      "prose": false
+    },
+    {
+      "class": "v5",
+      "code": "MD",
+      "double": false,
+      "name": "MODE",
+      "prose": false
+    },
+    {
+      "class": "v5",
+      "code": "FN",
+      "double": false,
+      "name": "FUNC",
+      "prose": false
+    },
+    {
+      "class": "v5",
+      "code": "SC",
+      "double": false,
+      "name": "SCHEMA",
+      "prose": false
+    },
+    {
+      "class": "v5",
+      "code": "CS",
+      "double": false,
+      "name": "CASE",
+      "prose": false
+    },
+    {
+      "class": "v5",
+      "code": "CL",
+      "double": false,
+      "name": "CLAUSE",
+      "prose": false
+    },
+    {
+      "class": "v5",
+      "code": "ML",
+      "double": false,
+      "name": "MODULE",
+      "prose": true
+    },
+    {
+      "class": "amended",
+      "code": "LT",
+      "double": false,
+      "name": "LIST",
+      "prose": true
+    },
+    {
+      "class": "meta",
+      "code": "GR",
+      "double": false,
+      "name": "GRAMMAR",
+      "prose": false
+    },
+    {
+      "class": "meta",
+      "code": "BY",
+      "double": false,
+      "name": "BODY",
+      "prose": false
+    },
+    {
+      "class": "meta",
+      "code": "RG",
+      "double": false,
+      "name": "REGISTRY",
+      "prose": false
+    },
+    {
+      "class": "terminator",
+      "code": "EN",
+      "double": false,
+      "name": "END_UNTRUSTED",
+      "prose": false
+    },
+    {
+      "class": "narrative",
+      "code": "SY",
+      "double": true,
+      "name": "SAY",
+      "prose": false
+    },
+    {
+      "class": "narrative",
+      "code": "TH",
+      "double": true,
+      "name": "THINK",
+      "prose": false
+    },
+    {
+      "class": "narrative",
+      "code": "AT",
+      "double": true,
+      "name": "ACT",
+      "prose": false
+    },
+    {
+      "class": "narrative",
+      "code": "DD",
+      "double": true,
+      "name": "DECIDE",
+      "prose": false
+    },
+    {
+      "class": "narrative",
+      "code": "DS",
+      "double": true,
+      "name": "DISCOVER",
+      "prose": false
+    },
+    {
+      "class": "narrative",
+      "code": "CR",
+      "double": true,
+      "name": "CREATE",
+      "prose": false
+    },
+    {
+      "class": "narrative",
+      "code": "ET",
+      "double": false,
+      "name": "EVENT",
+      "prose": false
+    },
+    {
+      "class": "narrative",
+      "code": "SL",
+      "double": false,
+      "name": "SILENCE",
+      "prose": false
+    },
+    {
+      "class": "narrative",
+      "code": "MT",
+      "double": false,
+      "name": "META",
+      "prose": false
+    },
+    {
+      "class": "narrative",
+      "code": "IR",
+      "double": false,
+      "name": "IRONY",
+      "prose": false
+    },
+    {
+      "class": "narrative",
+      "code": "FR",
+      "double": false,
+      "name": "FORESHADOW",
+      "prose": false
+    },
+    {
+      "class": "narrative",
+      "code": "CB",
+      "double": false,
+      "name": "CALLBACK",
+      "prose": false
+    },
+    {
+      "class": "narrative",
+      "code": "EM",
+      "double": false,
+      "name": "EMOTION_FIELD",
+      "prose": false
+    }
+  ],
+  "digest": "7e29fae7f5eab384fd1588c23ac9860dbb387e5d66bd1be71343d0bc728d61ba",
+  "entities": [
+    {
+      "mark": "SR",
+      "name": "SRC",
+      "tier": 1
+    },
+    {
+      "mark": "DS",
+      "name": "DST",
+      "tier": 1
+    },
+    {
+      "mark": "PR",
+      "name": "PREV",
+      "tier": 1
+    },
+    {
+      "mark": "LC",
+      "name": "LOCAL",
+      "tier": 1
+    },
+    {
+      "mark": "SC",
+      "name": "SCREEN",
+      "tier": 1
+    },
+    {
+      "mark": "LG",
+      "name": "LOG",
+      "tier": 1
+    },
+    {
+      "mark": "NL",
+      "name": "NULL",
+      "tier": 1
+    },
+    {
+      "mark": "ST",
+      "name": "STDIN",
+      "tier": 1
+    },
+    {
+      "mark": "GH",
+      "name": "GH",
+      "tier": 2
+    },
+    {
+      "mark": "R2",
+      "name": "R2",
+      "tier": 2
+    },
+    {
+      "mark": "CS",
+      "name": "COS",
+      "tier": 2
+    },
+    {
+      "mark": "DR",
+      "name": "DRIVE",
+      "tier": 2
+    },
+    {
+      "mark": "WR",
+      "name": "WORKER",
+      "tier": 2
+    },
+    {
+      "mark": "CF",
+      "name": "CF",
+      "tier": 2
+    },
+    {
+      "mark": "SY",
+      "name": "SYSTEM",
+      "tier": 3
+    },
+    {
+      "mark": "RN",
+      "name": "RUNTIME",
+      "tier": 3
+    },
+    {
+      "mark": "GR",
+      "name": "GRADER",
+      "tier": 3
+    },
+    {
+      "mark": "US",
+      "name": "USER",
+      "tier": 3
+    },
+    {
+      "mark": "SL",
+      "name": "SELF",
+      "tier": 3
+    },
+    {
+      "mark": "AG",
+      "name": "AGENT",
+      "tier": 3
+    },
+    {
+      "mark": "TS",
+      "name": "TASK",
+      "tier": 3
+    },
+    {
+      "mark": "TL",
+      "name": "TOOL",
+      "tier": 3
+    },
+    {
+      "mark": "IM",
+      "name": "IMG",
+      "tier": 4
+    },
+    {
+      "mark": "VD",
+      "name": "VID",
+      "tier": 4
+    },
+    {
+      "mark": "AD",
+      "name": "AUD",
+      "tier": 4
+    }
+  ],
+  "iml_version": "0.5",
+  "keys": [
+    {
+      "code": "sr",
+      "name": "src",
+      "tier": "core"
+    },
+    {
+      "code": "ds",
+      "name": "dst",
+      "tier": "core"
+    },
+    {
+      "code": "pt",
+      "name": "path",
+      "tier": "core"
+    },
+    {
+      "code": "fm",
+      "name": "fmt",
+      "tier": "core"
+    },
+    {
+      "code": "ln",
+      "name": "lng",
+      "tier": "core"
+    },
+    {
+      "code": "st",
+      "name": "sty",
+      "tier": "core"
+    },
+    {
+      "code": "tn",
+      "name": "ton",
+      "tier": "core"
+    },
+    {
+      "code": "le",
+      "name": "len",
+      "tier": "core"
+    },
+    {
+      "code": "lm",
+      "name": "lim",
+      "tier": "core"
+    },
+    {
+      "code": "of",
+      "name": "off",
+      "tier": "core"
+    },
+    {
+      "code": "tp",
+      "name": "top",
+      "tier": "core"
+    },
+    {
+      "code": "bt",
+      "name": "bot",
+      "tier": "core"
+    },
+    {
+      "code": "sa",
+      "name": "srt",
+      "tier": "core"
+    },
+    {
+      "code": "gr",
+      "name": "grp",
+      "tier": "core"
+    },
+    {
+      "code": "wh",
+      "name": "whr",
+      "tier": "core"
+    },
+    {
+      "code": "mc",
+      "name": "mch",
+      "tier": "core"
+    },
+    {
+      "code": "ex",
+      "name": "exc",
+      "tier": "core"
+    },
+    {
+      "code": "dp",
+      "name": "dep",
+      "tier": "core"
+    },
+    {
+      "code": "rn",
+      "name": "rng",
+      "tier": "core"
+    },
+    {
+      "code": "ty",
+      "name": "typ",
+      "tier": "core"
+    },
+    {
+      "code": "en",
+      "name": "enc",
+      "tier": "core"
+    },
+    {
+      "code": "cp",
+      "name": "cap",
+      "tier": "core"
+    },
+    {
+      "code": "pr",
+      "name": "pri",
+      "tier": "core"
+    },
+    {
+      "code": "cl",
+      "name": "col",
+      "tier": "core"
+    },
+    {
+      "code": "rw",
+      "name": "row",
+      "tier": "core"
+    },
+    {
+      "code": "fr",
+      "name": "frm",
+      "tier": "core"
+    },
+    {
+      "code": "to",
+      "name": "to",
+      "tier": "core"
+    },
+    {
+      "code": "sc",
+      "name": "scp",
+      "tier": "core"
+    },
+    {
+      "code": "op",
+      "name": "op",
+      "tier": "core"
+    },
+    {
+      "code": "sb",
+      "name": "sbj",
+      "tier": "media"
+    },
+    {
+      "code": "ac",
+      "name": "act",
+      "tier": "media"
+    },
+    {
+      "code": "pl",
+      "name": "plc",
+      "tier": "media"
+    },
+    {
+      "code": "tx",
+      "name": "txt",
+      "tier": "media"
+    },
+    {
+      "code": "pv",
+      "name": "pov",
+      "tier": "media"
+    },
+    {
+      "code": "fc",
+      "name": "fcl",
+      "tier": "media"
+    },
+    {
+      "code": "mv",
+      "name": "mvt",
+      "tier": "media"
+    },
+    {
+      "code": "lg",
+      "name": "lgt",
+      "tier": "media"
+    },
+    {
+      "code": "pa",
+      "name": "pal",
+      "tier": "media"
+    },
+    {
+      "code": "md",
+      "name": "mdm",
+      "tier": "media"
+    },
+    {
+      "code": "as",
+      "name": "asp",
+      "tier": "media"
+    },
+    {
+      "code": "rs",
+      "name": "rsl",
+      "tier": "media"
+    },
+    {
+      "code": "ql",
+      "name": "qly",
+      "tier": "media"
+    },
+    {
+      "code": "dr",
+      "name": "dur",
+      "tier": "media"
+    },
+    {
+      "code": "fp",
+      "name": "fps",
+      "tier": "media"
+    },
+    {
+      "code": "sd",
+      "name": "sed",
+      "tier": "media"
+    },
+    {
+      "code": "ad",
+      "name": "adh",
+      "tier": "media"
+    },
+    {
+      "code": "rf",
+      "name": "ref",
+      "tier": "media"
+    },
+    {
+      "code": "dl",
+      "name": "dlg",
+      "tier": "media"
+    },
+    {
+      "code": "sf",
+      "name": "sfx",
+      "tier": "media"
+    }
+  ],
+  "tolerated_annotations": [
+    "LATENCY",
+    "CONFIDENCE"
+  ],
+  "value_codes": {
+    "act": {},
+    "adh": {},
+    "asp": {},
+    "bot": {},
+    "cap": {},
+    "col": {},
+    "dep": {},
+    "dlg": {},
+    "dst": {},
+    "dur": {},
+    "enc": {},
+    "exc": {},
+    "fcl": {},
+    "fmt": {},
+    "fps": {},
+    "frm": {},
+    "grp": {},
+    "len": {},
+    "lgt": {},
+    "lim": {},
+    "lng": {},
+    "mch": {},
+    "mdm": {},
+    "mvt": {},
+    "off": {},
+    "op": {},
+    "pal": {},
+    "path": {},
+    "plc": {},
+    "pov": {},
+    "pri": {},
+    "qly": {},
+    "ref": {},
+    "rng": {},
+    "row": {},
+    "rsl": {},
+    "sbj": {},
+    "scp": {},
+    "sed": {},
+    "sfx": {},
+    "src": {},
+    "srt": {},
+    "sty": {},
+    "to": {},
+    "ton": {},
+    "top": {},
+    "txt": {},
+    "typ": {},
+    "whr": {}
+  },
+  "verbs": [
+    {
+      "name": "READ",
+      "root": "RD"
+    },
+    {
+      "name": "WRIT",
+      "root": "WR"
+    },
+    {
+      "name": "GET",
+      "root": "GT"
+    },
+    {
+      "name": "DEL",
+      "root": "DL"
+    },
+    {
+      "name": "LIST",
+      "root": "LS"
+    },
+    {
+      "name": "COPY",
+      "root": "CP"
+    },
+    {
+      "name": "MOVE",
+      "root": "MV"
+    },
+    {
+      "name": "STRM",
+      "root": "ST"
+    },
+    {
+      "name": "CACH",
+      "root": "CC"
+    },
+    {
+      "name": "SYNC",
+      "root": "SY"
+    },
+    {
+      "name": "SEND",
+      "root": "SN"
+    },
+    {
+      "name": "RUN",
+      "root": "RN"
+    },
+    {
+      "name": "FMT",
+      "root": "FM"
+    },
+    {
+      "name": "CONV",
+      "root": "CN"
+    },
+    {
+      "name": "SPLIT",
+      "root": "SP"
+    },
+    {
+      "name": "MERGE",
+      "root": "MR"
+    },
+    {
+      "name": "MAP",
+      "root": "MP"
+    },
+    {
+      "name": "FILT",
+      "root": "FL"
+    },
+    {
+      "name": "SORT",
+      "root": "SR"
+    },
+    {
+      "name": "DEDU",
+      "root": "DD"
+    },
+    {
+      "name": "FLAT",
+      "root": "FT"
+    },
+    {
+      "name": "NEST",
+      "root": "NS"
+    },
+    {
+      "name": "CHNK",
+      "root": "CH"
+    },
+    {
+      "name": "REDU",
+      "root": "RE"
+    },
+    {
+      "name": "PIVT",
+      "root": "PV"
+    },
+    {
+      "name": "TRNS",
+      "root": "TR"
+    },
+    {
+      "name": "ENCD",
+      "root": "EN"
+    },
+    {
+      "name": "DECD",
+      "root": "DC"
+    },
+    {
+      "name": "HASH",
+      "root": "HS"
+    },
+    {
+      "name": "CMPR",
+      "root": "CM"
+    },
+    {
+      "name": "EXPN",
+      "root": "EX"
+    },
+    {
+      "name": "XLAT",
+      "root": "XL"
+    },
+    {
+      "name": "REWR",
+      "root": "RW"
+    },
+    {
+      "name": "DIFF",
+      "root": "DF"
+    },
+    {
+      "name": "SCAN",
+      "root": "SC"
+    },
+    {
+      "name": "MTCH",
+      "root": "MT"
+    },
+    {
+      "name": "CNT",
+      "root": "CT"
+    },
+    {
+      "name": "STAT",
+      "root": "SA"
+    },
+    {
+      "name": "EVAL",
+      "root": "EV"
+    },
+    {
+      "name": "SCOR",
+      "root": "SO"
+    },
+    {
+      "name": "RANK",
+      "root": "RK"
+    },
+    {
+      "name": "TRND",
+      "root": "TN"
+    },
+    {
+      "name": "CORR",
+      "root": "CR"
+    },
+    {
+      "name": "FRCS",
+      "root": "FR"
+    },
+    {
+      "name": "ANOM",
+      "root": "AN"
+    },
+    {
+      "name": "SENT",
+      "root": "SE"
+    },
+    {
+      "name": "CLST",
+      "root": "CL"
+    },
+    {
+      "name": "BNCH",
+      "root": "BN"
+    },
+    {
+      "name": "AUDT",
+      "root": "AD"
+    },
+    {
+      "name": "VALD",
+      "root": "VL"
+    },
+    {
+      "name": "CLSF",
+      "root": "CS"
+    },
+    {
+      "name": "CREA",
+      "root": "CE"
+    },
+    {
+      "name": "DRFT",
+      "root": "DR"
+    },
+    {
+      "name": "EXPD",
+      "root": "EP"
+    },
+    {
+      "name": "SHRT",
+      "root": "SH"
+    },
+    {
+      "name": "PARA",
+      "root": "PR"
+    },
+    {
+      "name": "STYL",
+      "root": "SL"
+    },
+    {
+      "name": "TMPL",
+      "root": "TM"
+    },
+    {
+      "name": "FILL",
+      "root": "FI"
+    },
+    {
+      "name": "EXTC",
+      "root": "ET"
+    },
+    {
+      "name": "GEN",
+      "root": "GN"
+    },
+    {
+      "name": "PLAN",
+      "root": "PL"
+    },
+    {
+      "name": "DECI",
+      "root": "DE"
+    },
+    {
+      "name": "CHEK",
+      "root": "CK"
+    },
+    {
+      "name": "FIX",
+      "root": "FX"
+    },
+    {
+      "name": "DPLO",
+      "root": "DP"
+    },
+    {
+      "name": "SAVE",
+      "root": "SV"
+    },
+    {
+      "name": "REVW",
+      "root": "RV"
+    },
+    {
+      "name": "LERN",
+      "root": "LR"
+    },
+    {
+      "name": "TEST",
+      "root": "TS"
+    },
+    {
+      "name": "PARS",
+      "root": "PS"
+    },
+    {
+      "name": "LOOP",
+      "root": "LP"
+    },
+    {
+      "name": "WAIT",
+      "root": "WT"
+    },
+    {
+      "name": "OUT",
+      "root": null
+    },
+    {
+      "name": "DISP",
+      "root": "DS"
+    },
+    {
+      "name": "EXPT",
+      "root": "EA"
+    },
+    {
+      "name": "PRNT",
+      "root": "PN"
+    },
+    {
+      "name": "LOG",
+      "root": "LG"
+    },
+    {
+      "name": "LINK",
+      "root": "LN"
+    },
+    {
+      "name": "SET",
+      "root": "SB"
+    },
+    {
+      "name": "TAG",
+      "root": "TG"
+    },
+    {
+      "name": "GRP",
+      "root": "GR"
+    },
+    {
+      "name": "EMBD",
+      "root": "EM"
+    },
+    {
+      "name": "HELP",
+      "root": "HL"
+    },
+    {
+      "name": "DESC",
+      "root": "DA"
+    },
+    {
+      "name": "INTR",
+      "root": "IN"
+    },
+    {
+      "name": "NOOP",
+      "root": "NP"
+    },
+    {
+      "name": "BATC",
+      "root": "BT"
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+::ILANG::v5.0
+::IMMUNE{prompt_injection⇒REJECT}
+::IMMUNE{identity_override⇒SANDBOX}
+::IMMUNE{source_authority_absent⇒ESCALATE}

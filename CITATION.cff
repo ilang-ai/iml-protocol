@@ -3,8 +3,8 @@ message: "If you use IML, please cite it as below."
 title: "IML (I-Lang Machine Layer)"
 abstract: >-
   IML (I-Lang Machine Layer) is an experimental machine form of I-Lang v4.x
-  operation chains, with fixed-width codes derived from the I-Lang canon at a
-  pinned commit. Version 0.2 fixes the supported subset (one linear operation
+  operation chains and, since version 0.5, of whole I-Lang documents, with
+  fixed-width codes derived from the I-Lang canon at a pinned commit. Version 0.2 fixes the supported subset (one linear operation
   chain), the registry derivation and its digest, the grammar and its
   segmentation rule, the message header, the canonical I-Lang print, the
   round-trip law at the AST level, and six error codes taken from the I-Lang
@@ -17,6 +17,11 @@ abstract: >-
   chains, the batch shorthand [BATC:VERB] and multi-line chains, and records
   that conditionals, parallel groups, DAGs, error handling and retry are not
   operation-chain syntax in the canon and therefore not in IML.
+  Version 0.5 carries whole I-Lang documents: the declaration names of the
+  canon get two-character codes derived like the verb roots, the block
+  structure of a declaration becomes explicit line structure, an operation
+  line in a declaration body is coded as a chain, and what the canon does not
+  tokenize is carried as exact text.
   IML registers no verb, modifier key, entity or declaration of its own and is
   not part of the I-Lang canon.
 type: software
@@ -29,7 +34,7 @@ authors:
 repository-code: "https://github.com/ilang-ai/iml-protocol"
 url: "https://github.com/ilang-ai/iml-protocol"
 license: MIT
-version: "0.4.1"
+version: "0.5.0"
 date-released: 2026-09-18
 keywords:
   - I-Lang

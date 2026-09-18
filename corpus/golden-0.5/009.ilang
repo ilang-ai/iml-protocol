@@ -1,0 +1,19 @@
+::ILANG::v5.0
+::SAY{@FROM→@TO}{content}
+::THINK{@ENTITY}{content}
+::ACT{@ENTITY}{action}
+::DECIDE{@ENTITY}{choice}
+::DISCOVER{@ENTITY}{insight}
+::CREATE{@ENTITY}{artifact}
+::EVENT{name}
+::SILENCE{}
+
+::META{comment}
+::IRONY{surface⇔reality}
+::FORESHADOW{future_event}
+::CALLBACK{reference}
+
+T[0]                    origin point
+T[n]                    time step n
+T[a]→T[b]              sequence
+PARALLEL{a, b}          simultaneous

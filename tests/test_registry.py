@@ -1,4 +1,10 @@
-"""Registry derivation: idempotent, digest-verified, counts and shapes as the design says."""
+"""Registry derivation: idempotent, digest-verified, counts and shapes as the design says.
+
+0.5 changed on purpose: the default registry is registry/iml-registry-0.5.json (the chain
+tables plus the declarations table, a new digest), and registry/iml-registry-0.2.json,
+kept byte for byte, is the chain registry whose digest 0.4, 0.3 and 0.2 headers carry.
+The chain tables checked below are the same in both files; the declarations table is
+checked in tests/test_registry_05.py."""
 
 import hashlib
 import importlib.util
@@ -13,7 +19,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from iml import __version__  # noqa: E402
-from iml.registry import DEFAULT_PATH, HEADER_VERSION, RegistryError, compute_digest, load_registry  # noqa: E402
+from iml.registry import (CHAIN_PATH, DEFAULT_PATH, HEADER_VERSION, RegistryError, compute_digest,  # noqa: E402
+                          load_registry)
 
 EXPECTED_ALIASES = {
     "Σ": "MERGE", "Δ": "DIFF", "φ": "FILT", "∇": "SORT", "λ": "MAP", "∂": "SPLIT", "μ": "STAT",
@@ -32,10 +39,12 @@ def load_derive_module():
 class TestDerivation(unittest.TestCase):
     def test_derivation_is_idempotent_and_matches_file(self):
         d = load_derive_module()
-        first = d.serialize(d.derive())
-        second = d.serialize(d.derive())
-        self.assertEqual(first, second)
-        self.assertEqual(first, DEFAULT_PATH.read_bytes())
+        first02, first05 = (d.serialize(r) for r in d.derive_both())
+        second02, second05 = (d.serialize(r) for r in d.derive_both())
+        self.assertEqual((first02, first05), (second02, second05))
+        self.assertEqual(first02, CHAIN_PATH.read_bytes())
+        self.assertEqual(first05, DEFAULT_PATH.read_bytes())
+        self.assertEqual(d.serialize(d.derive()), CHAIN_PATH.read_bytes())
 
     def test_check_mode_exits_zero(self):
         r = subprocess.run([sys.executable, str(ROOT / "tools" / "derive_registry.py"), "--check"],
@@ -43,10 +52,11 @@ class TestDerivation(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
 
     def test_registry_file_is_lf_utf8_without_bom(self):
-        data = DEFAULT_PATH.read_bytes()
-        self.assertFalse(data.startswith(b"\xef\xbb\xbf"))
-        self.assertEqual(data.count(b"\r"), 0)
-        self.assertTrue(data.endswith(b"\n"))
+        for path in (DEFAULT_PATH, CHAIN_PATH):
+            data = path.read_bytes()
+            self.assertFalse(data.startswith(b"\xef\xbb\xbf"), path)
+            self.assertEqual(data.count(b"\r"), 0, path)
+            self.assertTrue(data.endswith(b"\n"), path)
 
 
 class TestRegistryContent(unittest.TestCase):
@@ -58,17 +68,22 @@ class TestRegistryContent(unittest.TestCase):
     def test_digest(self):
         self.assertEqual(len(self.obj["digest"]), 64)
         self.assertEqual(compute_digest(self.obj), self.obj["digest"])
-        self.assertEqual(self.obj["digest"][:12], "88d05d0839c1")
-        # the registry is the 0.2 one, unchanged in 0.3 and 0.4: its own version stays 0.2;
-        # the header carries the surface version, 0.4 for what compile writes
-        self.assertEqual(self.reg.version, "0.2")
-        self.assertEqual(self.obj["iml_version"], "0.2")
-        self.assertEqual(HEADER_VERSION, "0.4")
+        self.assertEqual(self.obj["digest"][:12], "7e29fae7f5ea")
+        chain = json.loads(CHAIN_PATH.read_text(encoding="utf-8"))
+        self.assertEqual(compute_digest(chain), chain["digest"])
+        self.assertEqual(chain["digest"][:12], "88d05d0839c1")
+        # the default registry is the 0.5 one; the 0.2 one, unchanged, is the chain registry
+        # whose digest 0.4, 0.3 and 0.2 headers carry; the header version is the surface's
+        self.assertEqual(self.reg.version, "0.5")
+        self.assertEqual(self.obj["iml_version"], "0.5")
+        self.assertEqual(chain["iml_version"], "0.2")
+        self.assertEqual(HEADER_VERSION, "0.5")
         self.assertEqual(HEADER_VERSION, __version__.rsplit(".", 1)[0])
-        self.assertEqual(self.reg.header, "#iml/0.4/" + self.obj["digest"][:12])
-        self.assertEqual(self.reg.header_for("0.4"), self.reg.header)
-        self.assertEqual(self.reg.header_for("0.3"), "#iml/0.3/" + self.obj["digest"][:12])
-        self.assertEqual(self.reg.header_for("0.2"), "#iml/0.2/" + self.obj["digest"][:12])
+        self.assertEqual(self.reg.chain_digest, chain["digest"])
+        self.assertEqual(self.reg.header, "#iml/0.5/" + self.obj["digest"][:12])
+        self.assertEqual(self.reg.header_for("0.5"), self.reg.header)
+        for v in ("0.4", "0.3", "0.2"):
+            self.assertEqual(self.reg.header_for(v), "#iml/%s/" % v + chain["digest"][:12])
 
     def test_canon_pin(self):
         self.assertEqual(self.obj["canon"]["commit"], CANON_COMMIT)

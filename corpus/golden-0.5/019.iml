@@ -1,0 +1,23 @@
+#iml/0.5/7e29fae7f5ea
+"::ILANG::v5.0"
+:AC"spec_reader|protocol:iLang_v5.0"
+ RD@{SPEC}sr=... PSty=v5.0 LRwh=judgment_layer
+ "ON:spec_updated"
+:GN"verify_first|conf:confirmed|scope:global"
+ "T:check_before_execute"
+ "A:blind_execution⇒fatal"
+ :PI"completion:assume_incomplete"
+  "reason_note:one_level_body_ok"
+  "T:ask_before_irreversible"
+ :ST"@SKY, scope:session"
+  "bnd:[0.00,0.00,1.00,0.45]"
+:ST"@SPEC, kind:document"
+RD@{SPEC}sr=github.com/x PSty=v5.0 $
+BT:MR
+:LS"id:l1|type:build|scope:project|conf:confirmed"
+ "Express middleware order matters."
+ "[sic] bracket-initial prose is fine inside a prose body"
+ DP@WR CKwh=status:200 $
+:LT"@POSTER"
+ "@BASE"
+ "@TITLE"

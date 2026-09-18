@@ -1,0 +1,33 @@
+::ILANG::v5.0
+::STATE{@ENTITY, key:value}
+::TRUST{@A→@B, 0.0→1.0}
+::ALIVE{boolean}
+::MEMORY{intact|degraded|zero}
+
+::GENE{name|conf:level|scope:context}
+  T:positive_trait
+  T:conditional_trait|when:condition
+  A:anti_pattern⇒consequence
+
+::GENE_MUTABLE{id|T:trait|G:{Claude:val,Gemini:val}|Θ:gate}
+
+::RULE{condition⇒action}
+::ACTIVATE{name}
+  ON:trigger_event
+
+::FACT{key:name|value:data|conf:level}
+::LESSON{id:name|type:category|scope:context|conf:level}
+::PROGRESS{date:ISO8601|done:what|next:what}
+
+::PRIORITY{
+  user_explicit > task_context > project_override > confirmed_gene > tentative > default
+}
+
+::DECAY{
+  tentative_unseen_30d⇒remove
+  repeated_3x⇒confirm
+  explicit_rejection⇒anti_pattern
+  inactive_project_60d⇒archive
+}
+
+::IMMUNE{trigger⇒response}

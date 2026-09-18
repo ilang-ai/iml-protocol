@@ -6,7 +6,13 @@ version="0.3" names no surface), what the command line does with its input bytes
 leading byte order mark dropped, input that is not UTF-8 reported as E300), and the two
 assertions over the 72 chains of corpus/golden/: their 0.4 message is the 0.3 record
 under the 0.4 header, and the 0.3 record decompiles under the default reader to the same
-canonical text as its source."""
+canonical text as its source.
+
+0.5 changed on purpose, and these tests follow: compile writes the 0.5 header (#iml/0.5/
+and the 0.5 registry digest); the default reader is 0.5 and reads a 0.4 and a 0.3 header
+without a flag, so version="0.4" names no surface; `roundtrip` reads its file as a whole
+I-Lang document (iml.doc_parse), so an operation line broken inside a quoted value is
+reported there with the validator's wording for a bracket line."""
 
 import subprocess
 import sys
@@ -274,7 +280,7 @@ class TestVerbRef(unittest.TestCase):
         self.assertEqual(cm.exception.code, "E300")
         self.assertIn("stray character ':'", cm.exception.message)
         self.assertFalse(SURFACES["0.2"].verbref)
-        self.assertTrue(SURFACES["0.4"].verbref)
+        self.assertTrue(SURFACES["0.5"].verbref)
 
 
 class TestJoinChainLines(unittest.TestCase):
@@ -475,7 +481,9 @@ class TestJoinChainLines(unittest.TestCase):
             r = run_cli("roundtrip", str(p))
         self.assertEqual(r.returncode, 1)
         self.assertIn(":1: E300", r.stderr)
-        self.assertIn(UNTERMINATED, r.stderr)
+        # 0.5: roundtrip reads the file as a document; the validator does not read `[READ|whr="abc`
+        # as an operation line (no closed bracket group), so the wording is the validator's own
+        self.assertIn("bracket line is neither tag nor operation", r.stderr)
 
     def test_decompile_direction_does_not_join(self):
         h = default_registry().header
@@ -577,37 +585,44 @@ class TestHeaderAcceptance(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.reg = default_registry()
-        cls.h04, cls.h03, cls.h02 = cls.reg.header, cls.reg.header_for("0.3"), cls.reg.header_for("0.2")
+        cls.hw = cls.reg.header                   # the header compile writes (0.5)
+        cls.h04, cls.h03, cls.h02 = cls.reg.header_for("0.4"), cls.reg.header_for("0.3"), cls.reg.header_for("0.2")
 
     def test_versions(self):
-        self.assertEqual(DEFAULT_VERSION, "0.4")
-        self.assertEqual(VERSIONS, ("0.4", "0.2"))
-        self.assertEqual(surface("0.4").reads, {"0.4", "0.3"})
+        self.assertEqual(DEFAULT_VERSION, "0.5")
+        self.assertEqual(VERSIONS, ("0.5", "0.2"))
+        self.assertEqual(surface("0.5").reads, {"0.5", "0.4", "0.3"})
         self.assertEqual(surface("0.2").reads, {"0.2"})
+        self.assertEqual(self.hw, "#iml/0.5/7e29fae7f5ea")
         self.assertEqual(self.h04, "#iml/0.4/88d05d0839c1")
-        with self.assertRaises(ValueError) as cm:
-            surface("0.3")
-        self.assertIn("default reader", str(cm.exception))
+        for v in ("0.3", "0.4"):
+            with self.assertRaises(ValueError) as cm:
+                surface(v)
+            self.assertIn("default reader", str(cm.exception))
 
     def test_0_3_header_read_without_a_flag(self):
         a = parse_L2(WORKED)
-        m04 = compile(a)
-        m03 = self.h03 + " " + body(m04)
-        self.assertEqual(decompile(m03), a)
-        self.assertEqual(decompile(m03 + "\n"), a)
-        self.assertEqual(decompile(m03, version="0.4"), a)
-        self.assertEqual(print_L2(decompile(m03)), print_L2(a))
-        self.assertEqual(compile(decompile(m03)), m04)       # recompiles under the 0.4 header
-        d04 = compile_document([a, a])
-        d03 = self.h03 + d04[len(self.h04):]
-        self.assertEqual(decompile(d03), [a, a])
-        self.assertEqual(decompile(d03.replace("\n", "\r\n") + "\r\n"), [a, a])
-        # the document law is promised for codec-produced (0.4) documents; a decompiled
-        # 0.3 document recompiles with the 0.4 header
-        self.assertEqual(compile_document(decompile(d03)), d04)
-        self.assertNotEqual(compile_document(decompile(d03)), d03)
-        # the reader does not tell the two headers apart: the header names what the writer wrote
+        mw = compile(a)
+        m03 = self.h03 + " " + body(mw)
+        m04 = self.h04 + " " + body(mw)
+        for m in (m03, m04):
+            self.assertEqual(decompile(m), a)
+            self.assertEqual(decompile(m + "\n"), a)
+            self.assertEqual(decompile(m, version="0.5"), a)
+            self.assertEqual(print_L2(decompile(m)), print_L2(a))
+            self.assertEqual(compile(decompile(m)), mw)        # recompiles under the 0.5 header
+        dw = compile_document([a, a])
+        for h in (self.h03, self.h04):
+            d = h + dw[len(self.hw):]
+            self.assertEqual(decompile(d), [a, a])
+            self.assertEqual(decompile(d.replace("\n", "\r\n") + "\r\n"), [a, a])
+            # the document law is promised for codec-produced (0.5) documents; a decompiled
+            # 0.3 or 0.4 document recompiles with the 0.5 header
+            self.assertEqual(compile_document(decompile(d)), dw)
+            self.assertNotEqual(compile_document(decompile(d)), d)
+        # the reader does not tell the headers apart: the header names what the writer wrote
         self.assertEqual(decompile(self.h03 + " BT:RD"), decompile(self.h04 + " BT:RD"))
+        self.assertEqual(decompile(self.hw + " BT:RD"), decompile(self.h04 + " BT:RD"))
 
     def test_0_2_needs_the_flag_and_0_3_is_not_a_flag(self):
         a = parse_L2(WORKED)
@@ -640,15 +655,17 @@ class TestHeaderAcceptance(unittest.TestCase):
         self.assertEqual(r.returncode, 1)
         self.assertIn("E502", r.stderr)
         r = run_cli("compile", stdin="[READ]\n")
-        self.assertEqual(r.stdout, self.h04 + " RD\n")
+        self.assertEqual(r.stdout, self.hw + " RD\n")
         r = run_cli("check-registry")
-        self.assertIn("header #iml/0.4/88d05d0839c1\n", r.stdout)
-        self.assertIn("header #iml/0.3/88d05d0839c1 (read by the default reader)\n", r.stdout)
+        self.assertIn("header #iml/0.5/7e29fae7f5ea\n", r.stdout)
+        self.assertIn("header #iml/0.4/88d05d0839c1 (read by the default reader, chains only)\n", r.stdout)
+        self.assertIn("header #iml/0.3/88d05d0839c1 (read by the default reader, chains only)\n", r.stdout)
         self.assertIn("header #iml/0.2/88d05d0839c1 (read only, --version 0.2)\n", r.stdout)
 
 
 class TestGolden72(unittest.TestCase):
-    """The 72 chains of corpus/golden/ under 0.4 (design-0.4 section 8)."""
+    """The 72 chains of corpus/golden/ under 0.5: their message is the 0.3 record under the
+    0.5 header (design-0.4 section 8, the header updated in 0.5)."""
 
     @classmethod
     def setUpClass(cls):
@@ -657,18 +674,19 @@ class TestGolden72(unittest.TestCase):
             src = p.read_text(encoding="utf-8").rstrip("\n")
             record03 = (GOLDEN_03 / (p.stem + ".iml")).read_text(encoding="utf-8").rstrip("\n")
             cls.pairs.append((p.stem, src, record03))
-        cls.h04 = default_registry().header
+        cls.hw = default_registry().header
 
     def test_size(self):
         self.assertEqual(len(self.pairs), 72)
 
-    def test_0_4_message_is_the_0_3_record_under_the_0_4_header(self):
+    def test_0_5_message_is_the_0_3_record_under_the_0_5_header(self):
         for stem, src, record03 in self.pairs:
             with self.subTest(stem=stem):
                 self.assertTrue(record03.startswith("#iml/0.3/88d05d0839c1 "))
-                self.assertEqual(compile(parse_L2(src)), "#iml/0.4/" + record03[len("#iml/0.3/"):])
+                self.assertEqual(compile(parse_L2(src)), "#iml/0.5/7e29fae7f5ea " + body(record03))
+                self.assertEqual(decompile("#iml/0.4/88d05d0839c1 " + body(record03)), parse_L2(src))
         asts = [parse_L2(src) for _, src, _ in self.pairs]
-        self.assertEqual(compile_document(asts), self.h04 + "\n" + "\n".join(body(r) for _, _, r in self.pairs))
+        self.assertEqual(compile_document(asts), self.hw + "\n" + "\n".join(body(r) for _, _, r in self.pairs))
 
     def test_0_3_record_decompiles_under_the_default_reader_to_the_same_canonical_text(self):
         for stem, src, record03 in self.pairs:

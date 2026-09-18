@@ -1,0 +1,18 @@
+::ILANG::v5.0
+::ACTIVATE{build_feature}
+  ON:user_request
+::RULE{scope>2hr⇒activate_plan_breakdown}
+
+[PLAN:@SRC|len=5-15]=>[Ω]
+
+::PROGRESS{date:2026-04-20|done:plan_approved|next:build_auth}
+
+[CREA:@LOCAL|path=auth/login.go]=>[TEST]=>[REVW]=>[Ω]
+[CREA:@LOCAL|path=auth/register.go]=>[TEST]=>[REVW]=>[Ω]
+
+::PROGRESS{date:2026-04-20|done:auth_module|next:deploy}
+
+[DPLO:@WORKER]=>[CHEK|whr=status:200]=>[Ω]
+
+::LESSON{id:go_middleware|type:build|scope:project|conf:confirmed}
+  Auth middleware must be registered before route handlers.

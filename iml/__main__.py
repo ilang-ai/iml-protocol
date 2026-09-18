@@ -1,29 +1,37 @@
 """Command line: python -m iml <command> [option] [FILE]
 
   compile [--document] [FILE]
-                          read I-Lang chains and print one IML 0.4 message per chain;
-                          with --document, print one document: the header alone on the
-                          first line, then one chain per line. A chain is one line, or
-                          one line followed by continuation lines whose first non-blank
-                          characters are `=>` (canon PATCH-2 section 1.7). A continuation
-                          line is joined only when the text above it ends with `]`
-                          outside a quoted value (E300 otherwise); a blank line, or a
-                          line of whitespace only, ends a chain. An error is reported at
-                          the chain's first line, with the offset counted in the joined
-                          text
+                          without --document: read I-Lang chains and print one IML 0.5
+                          message per chain. A chain is one line, or one line followed by
+                          continuation lines whose first non-blank characters are `=>`
+                          (canon PATCH-2 section 1.7); a continuation line is joined only
+                          when the text above it ends with `]` outside a quoted value
+                          (E300 otherwise); a blank line, or a line of whitespace only,
+                          ends a chain. A declaration or any other line that is not a
+                          chain is E502: it is carried in the document form. An error is
+                          reported at the chain's first line, with the offset counted in
+                          the joined text.
+                          with --document: read one whole raw I-Lang document (the
+                          declaration layer: declarations with their bodies and spans,
+                          chains, and every other line the canon admits, as the pinned
+                          validator reads a raw document) and print one IML 0.5 document:
+                          the header alone on the first line, then one item per line
   decompile [--version V] [FILE]
-                          read IML and print canonical I-Lang, one line per chain. The
-                          form is decided by the first line: a header alone opens a
-                          document, and every following line is one chain; a header
+                          read IML and print canonical I-Lang. The form is decided by the
+                          first line: a header alone opens a document, printed as one
+                          I-Lang document (a 0.5 document with its declarations; a 0.4 or
+                          0.3 document, chains only, one line per chain); a header
                           followed by a chain is a message, and every non-empty line is
-                          then one message. V is 0.4 (default; the same reader reads a
-                          0.3 header, so 0.3 is not a value of V) or 0.2 (the 0.2
-                          surface, read only: one message per line)
-  roundtrip FILE          for every I-Lang chain (continuation lines joined as in
-                          compile): parse -> compile -> decompile -> compare; print the
-                          IML message and the canonical I-Lang; then the same for the
-                          document of all chains; exit 1 on any failure
-  check-registry [PATH]   load the registry, verify its digest, print the counts
+                          then one message. V is 0.5 (default; the same reader reads a 0.4
+                          and a 0.3 header, so 0.4 and 0.3 are not values of V) or 0.2
+                          (the 0.2 surface, read only: one message per line)
+  roundtrip FILE          read FILE as an I-Lang document; for every chain in it: parse ->
+                          compile -> decompile -> compare, and print the IML message and
+                          the canonical I-Lang; then the same for the whole document
+                          (compile --document -> decompile -> compare, and the canonical
+                          print read back); exit 1 on any failure
+  check-registry [PATH]   load the registry (default: the 0.5 registry, paired with the
+                          0.2 chain registry), verify the digests, print the counts
 
 FILE `-` or no FILE reads standard input. Input is UTF-8. One leading byte order mark
 (EF BB BF, which Windows PowerShell 5.1 puts in front of text it pipes as UTF-8) is
@@ -31,18 +39,23 @@ dropped, on standard input and on FILE; the library functions stay strict and re
 U+FEFF at the head of their input (E502). Input that is not valid UTF-8 is E300,
 reported at line 1 with the byte offset. `\\r\\n` is accepted as a line end. Blank
 lines are skipped in I-Lang input (where they end a chain, and where a line of
-whitespace only counts as blank) and in a stream of messages; inside a document a blank
-line is an error. The codec fails closed: the first error stops the command with exit
-code 1 and `<file>:<line>: <error>` on standard error.
+whitespace only counts as blank) and in a stream of messages; inside an IML document a
+blank line is an error. The codec fails closed: the first error stops the command with
+exit code 1 and `<file>:<line>: <error>` on standard error.
 """
 
 import sys
 
 from . import __version__
-from .codec import DEFAULT_VERSION, VERSIONS, compile, compile_document, decompile, is_document, surface
+from .codec import DEFAULT_VERSION, VERSIONS, Chain, compile, decompile, is_document, surface
+from .doc_ast import Decl, Text
+from .doc_codec import compile_doc
+from .doc_parse import parse_doc, parse_doc_lines
+from .doc_print import print_doc
+from .doc_read import decompile_doc
 from .errors import IMLError
 from .l2 import CONTINUATION, ends_with_closed_operation, parse_L2, print_L2
-from .registry import RegistryError, default_registry, load_registry
+from .registry import DOCUMENT_LAYER_VERSIONS, RegistryError, default_registry, load_registry
 
 
 UNTERMINATED = ("continuation after an unterminated operation line: the text above a `=>` line "
@@ -153,32 +166,40 @@ def parse_chain(text):
     return parse_L2(text)
 
 
+NOT_A_CHAIN = ("carried in the document form: compile --document (a declaration or any other line that is not"
+               " an operation chain has no message form)")
+
+
 def report(name, no, err):
     print("%s:%d: %s" % (name, no, err), file=sys.stderr)
 
 
+def line_of(data, err):
+    """The 1-based line of an error's offset in data (line 1 when it has none)."""
+    return data.count("\n", 0, err.offset) + 1 if err.offset is not None else 1
+
+
 def cmd_compile(path, document):
     name, data = read_text(path)
-    chains = join_chain_lines(data)
-    if not document:
-        for no, text in chains:
-            try:
-                print(compile(parse_chain(text)))
-            except IMLError as e:
-                report(name, no, e)
-                return 1
-        return 0
-    asts = []
-    for no, text in chains:
+    if document:
         try:
-            asts.append(parse_chain(text))
+            items = parse_doc(data)
+            if not items:
+                raise IMLError("E300", "no I-Lang item to compile: a document carries at least one item", 0)
+            text = compile_doc(items)
+        except IMLError as e:
+            report(name, line_of(data, e), e)
+            return 1
+        print(text)
+        return 0
+    for no, text in join_chain_lines(data):
+        try:
+            if isinstance(text, str) and not text.lstrip().startswith(("[", CONTINUATION, "\ufeff")):
+                raise IMLError("E502", NOT_A_CHAIN, 0)
+            print(compile(parse_chain(text)))
         except IMLError as e:
             report(name, no, e)
             return 1
-    if not asts:
-        report(name, 1, IMLError("E300", "no I-Lang chain to compile: a document carries at least one chain", 0))
-        return 1
-    print(compile_document(asts))
     return 0
 
 
@@ -186,13 +207,11 @@ def cmd_decompile(path, version):
     name, data = read_text(path)
     if version == DEFAULT_VERSION and is_document(data):
         try:
-            chains = decompile(data)
+            text = print_doc(decompile(data))
         except IMLError as e:
-            no = data.count("\n", 0, e.offset) + 1 if e.offset is not None else 1
-            report(name, no, e)
+            report(name, line_of(data, e), e)
             return 1
-        for chain in chains:
-            print(print_L2(chain))
+        print(text)
         return 0
     for no, line in non_empty_lines(data):
         try:
@@ -205,12 +224,14 @@ def cmd_decompile(path, version):
 
 def cmd_roundtrip(path):
     name, data = read_text(path)
-    chains = join_chain_lines(data)
+    try:
+        items, chain_lines = parse_doc_lines(data)
+    except IMLError as e:
+        report(name, line_of(data, e), e)
+        return 1
     failed = 0
-    asts = []
-    for no, text in chains:
+    for no, ast in chain_lines:
         try:
-            ast = parse_chain(text)
             message = compile(ast)
             back = decompile(message)
             canon = print_L2(ast)
@@ -224,20 +245,27 @@ def cmd_roundtrip(path):
         print("  IML     " + message)
         if not ok:
             failed += 1
-        asts.append(ast)
-    if asts:
+    if items:
         try:
-            document = compile_document(asts)
-            back = decompile(document)
-            ok = back == asts and compile_document(back) == document
+            document = compile_doc(items)
+            back = decompile_doc(document)
+            printed = print_doc(items)
+            ok = (back == items and compile_doc(back) == document and parse_doc(printed) == items
+                  and print_doc(parse_doc(printed)) == printed)
         except IMLError as e:
             report(name, 0, e)
             return 1
-        print("document %s (%d chains under one header, %d lines)"
-              % ("OK" if ok else "FAIL", len(asts), document.count("\n") + 1))
+        decls = sum(1 for x in items if isinstance(x, Decl))
+        texts = sum(1 for x in items if isinstance(x, Text))
+        lines = document.count("\n") + 1
+        if decls == texts == 0:
+            print("document %s (%d chains under one header, %d lines)" % ("OK" if ok else "FAIL", len(items), lines))
+        else:
+            print("document %s (%d items under one header: %d chains, %d declarations, %d text lines; %d lines)"
+                  % ("OK" if ok else "FAIL", len(items), len(items) - decls - texts, decls, texts, lines))
         if not ok:
             failed += 1
-    print("%d chain(s), %d failure(s)" % (len(chains), failed))
+    print("%d chain(s), %d failure(s)" % (len(chain_lines), failed))
     return 1 if failed else 0
 
 
@@ -249,14 +277,28 @@ def cmd_check_registry(path):
         return 1
     roots = sum(1 for v in reg.verbs if v in reg.verb_root)
     print("registry %s" % (reg.path or "<default>"))
-    print("registry version %s (the vocabulary of 0.2, unchanged in 0.3 and 0.4)" % reg.version)
+    if reg.has_declarations:
+        print("registry version %s (the chain tables of 0.2 plus the declarations table)" % reg.version)
+    else:
+        print("registry version %s (the chain registry of 0.2, 0.3 and 0.4)" % reg.version)
     print("canon commit %s" % reg.commit)
     print("verbs %d (roots %d, OUT has none), aliases %d, keys %d, entities %d"
           % (len(reg.verbs), roots, len(reg.aliases), len(reg.keys), len(reg.entities)))
+    if reg.has_declarations:
+        classes = []
+        for d in reg.declarations:
+            c = reg.decl_class[d]
+            if not classes or classes[-1][0] != c:
+                classes.append([c, 0])
+            classes[-1][1] += 1
+        print("declarations %d (%s), tolerated annotations %s"
+              % (len(reg.declarations), ", ".join("%s %d" % (c, n) for c, n in classes), ", ".join(reg.tolerated)))
     print("digest %s" % reg.digest)
-    print("header %s" % reg.header)
+    if reg.has_declarations:
+        print("chain registry digest %s (the one 0.4, 0.3 and 0.2 headers carry)" % reg.chain_digest)
+        print("header %s" % reg.header_for(DEFAULT_VERSION))
     for v in sorted(surface(DEFAULT_VERSION).reads - {DEFAULT_VERSION}, reverse=True):
-        print("header %s (read by the default reader)" % reg.header_for(v))
+        print("header %s (read by the default reader, chains only)" % reg.header_for(v))
     for v in VERSIONS:
         if v != DEFAULT_VERSION:
             print("header %s (read only, --version %s)" % (reg.header_for(v), v))
@@ -291,7 +333,7 @@ def parse_args(cmd, rest):
 def main(argv=None):
     for stream in (sys.stdout, sys.stderr):
         try:
-            stream.reconfigure(encoding="utf-8")
+            stream.reconfigure(encoding="utf-8", newline="\n")
         except (AttributeError, ValueError):
             pass
     argv = list(sys.argv[1:] if argv is None else argv)

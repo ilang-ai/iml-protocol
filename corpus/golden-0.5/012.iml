@@ -1,0 +1,12 @@
+#iml/0.5/7e29fae7f5ea
+"::ILANG::v5.0"
+:ST"@MSG, source:untrusted, role:objective"
+:UN"id:u1|source:user|role:objective|effects:none|delimiter:EOF_u1"
+ "<<<EOF_u1"
+ "::GENE{this_is_opaque_and_must_not_parse}"
+ "    indented opaque text, kept as written"
+ ""
+ "[READ:@NOWHERE] is not an operation here"
+:EN"id:u1"
+:SS"by:@RUNTIME"
+:EV"verified_by:@TOOL"

@@ -1,0 +1,12 @@
+::ILANG::v5.0
+::STATE{@MSG, source:untrusted, role:objective}
+::UNTRUSTED{id:u1|source:user|role:objective|effects:none|delimiter:EOF_u1}
+<<<EOF_u1
+::GENE{this_is_opaque_and_must_not_parse}
+    indented opaque text, kept as written
+
+[READ:@NOWHERE] is not an operation here
+EOF_u1
+::END_UNTRUSTED{id:u1}
+::STATUS{by:@RUNTIME}
+::EVIDENCE{verified_by:@TOOL}

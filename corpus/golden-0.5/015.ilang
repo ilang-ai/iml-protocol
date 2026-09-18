@@ -1,0 +1,27 @@
+::ILANG::v5.0
+::CLAUSE{DECL-COUNT|conf:confirmed|scope:v5}
+T:structural_declarations=32|14_v3+8_v4+9_v5+1_amended
+T:this_registry_is_the_canonical_count
+A:citing_a_different_total_without_amending_this_table⇒drift
+
+
+::CLAUSE{ENTITY-COUNT|conf:confirmed|scope:v5}
+T:registered_entities=22|8_core+6_external+8_role
+T:role_tier_mirrors_v4.0_authority_model|system>developer>runtime>user>agent_self
+T:developer_tier_has_no_entity|developer_authority_expresses_as_GENE/RULE_blocks_in_system_prompt
+
+
+::REGISTRY{custom|conf:confirmed|scope:v5}
+T:name_pattern=`@[A-Z][A-Z0-9_]*`
+T:any_conforming_name_is_valid_without_prior_registration
+T:scope=document|a_custom_entity_is_local_to_the_document_that_uses_it
+T:SHOULD_be_introduced_by_`::STATE{@NAME, …}`_before_first_operational_use
+T:MUST_NOT_shadow_a_Tier_1/2/3_name_with_different_semantics
+A:lowercase_or_leading_digit_after_the_sigil⇒E300
+A:rebinding_a_registered_name_to_foreign_semantics⇒E202_Entity_Rebinding
+
+::REGISTRY{resolution|conf:confirmed|scope:v5}
+T:resolution_order=Tier1→Tier2→Tier3→document_custom→runtime_registry
+T:unresolvable_name⇒E200_Entity_Not_Found
+T:resolvable_but_unavailable_in_this_environment⇒E201_Unsupported_Entity
+T:E201_is_recoverable|degrade_per_v4.0_§0.1_rather_than_abort

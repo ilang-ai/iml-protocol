@@ -1110,5 +1110,515 @@
   "expect": "E502",
   "version": "0.4",
   "label": "leading U+FEFF given to decompile: no header at offset 0"
+ },
+ {
+  "input": "::ILANG::v5.0\n::WIDGET{x:1}\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "unregistered declaration name"
+ },
+ {
+  "input": "::ILANG::v5.0\n::FACT{key:a|value:@bad_case}\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "lower-case entity in a header"
+ },
+ {
+  "input": "::ILANG::v5.0\n::FACT{key:a｜value:b}\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "full-width pipe separator"
+ },
+ {
+  "input": "::ILANG::v5.0\n::FACT{key：a|value:b|conf:c}\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "full-width colon separator"
+ },
+ {
+  "input": "::ILANG::v5.0\n::SAY{@A}\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "double-brace form missing"
+ },
+ {
+  "input": "::ILANG::v5.0\n::SAY{@A}{x} y\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "double-brace form with text after it"
+ },
+ {
+  "input": "::ILANG::v5.0\n::STATE::X{@A, k:v}\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "two-segment name on a declaration other than MODULE"
+ },
+ {
+  "input": "::ILANG::v5.0\n::PRIORITY{\n  a > b\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "unclosed span"
+ },
+ {
+  "input": "::ILANG::v5.0\n::FACT{key:a|value:b}\n::ILANG::MID::MARKER\n::FACT{key:d|value:e}\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "marker in the middle"
+ },
+ {
+  "input": "::ILANG::v5.0\n::ILANG::v5.0 trailing junk\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "malformed marker"
+ },
+ {
+  "input": "::ILANG::v5.0\n::GENE{g|conf:c}\n  =>[Ω]\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "orphan continuation in a body"
+ },
+ {
+  "input": "::ILANG::v5.0\n=>[Ω]\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "orphan continuation at top level"
+ },
+ {
+  "input": "::ILANG::v5.0\n::GENE{x|conf:confirmed}\n  free prose under gene\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "B6 prose in a non-prose body"
+ },
+ {
+  "input": "::ILANG::v5.0\n::GENE{x}\n  [not a tag\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "bracket body line that is neither tag nor operation"
+ },
+ {
+  "input": "::ILANG::v5.0\n::FACT{a:b}\n[not a tag\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "bracket line that is neither tag nor operation"
+ },
+ {
+  "input": "::ILANG::v5.0\n::FACT{a:b}\nplain words after a construct\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "line that matches no production"
+ },
+ {
+  "input": "::ILANG::v5.0\n::GENE{a|conf:c}\n  ::PRIOR{b:c}\n    ::PRIOR{d:e}\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "nesting two levels"
+ },
+ {
+  "input": "::ILANG::v5.0\n::GENE{g}\n  ::WIDGET{x}\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "nested unregistered declaration"
+ },
+ {
+  "input": "::ILANG::v5.0\n::GENE{g}\n  ::GRAMMAR{x}\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "nested meta declaration"
+ },
+ {
+  "input": "::ILANG::v5.0\n::FACT key:a\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "header lacks an opening brace"
+ },
+ {
+  "input": "::ILANG::v5.0\n::fact{a}\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "malformed declaration header"
+ },
+ {
+  "input": "::ILANG::v5.0\n::ACTIVATE{a} [READ:@SRC]\n  =>[Ω]\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "continuation after a same-line trailing body token"
+ },
+ {
+  "input": "::ILANG::v5.0\n::ACTIVATE{a}\n  [REED:@SRC]=>[Ω]\n",
+  "direction": "compile-document",
+  "expect": "E304",
+  "label": "unknown verb in a body chain"
+ },
+ {
+  "input": "::ILANG::v5.0\n[READ:@SRC|pth=x]=>[Ω]\n",
+  "direction": "compile-document",
+  "expect": "E302",
+  "label": "unknown key in a top-level chain"
+ },
+ {
+  "input": "\ufeff::ILANG::v5.0\n::FACT{a:b}\n",
+  "direction": "compile-document",
+  "expect": "E502",
+  "label": "byte order mark given to the library"
+ },
+ {
+  "input": "::ILANG::v5.0\n::LESSON{a}\n  ::LESSON{\n    some prose\n  }\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "stricter: nested span"
+ },
+ {
+  "input": "::ILANG::v5.0\n::UNTRUSTED{id:u|delimiter:EOF}\nopaque\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "stricter: unterminated opaque block"
+ },
+ {
+  "input": "::ILANG::v5.0\n::GENE{x}\n  T:a\tb\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "stricter: TAB in a body text"
+ },
+ {
+  "input": "::ILANG::v5.0\n::FACT{key:a\tb}\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "stricter: TAB in a header"
+ },
+ {
+  "input": "::ILANG::v5.0\n::FACT{a:b}\u000b\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "stricter: control character U+000B in a line"
+ },
+ {
+  "input": "::ILANG::v5.0\n::GENE{g}\n  ::PRIOR{p:q}\n    [READ:@SRC]=>[Ω]\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "stricter: nested body line with a chain"
+ },
+ {
+  "input": "::ILANG::v5.0\n::GENE{g}\n  ::PRIOR{p:q}\n    =>[Ω]\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "nested body line with a continuation"
+ },
+ {
+  "input": "::ILANG::v5.0\n::GENE{g}\n  ::LESSON{l}\n    =>[Ω]\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "stricter: continuation in a nested prose body"
+ },
+ {
+  "input": "::ILANG::v5.0\n::LESSON{id:x}\n  =>[FMT]\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "stricter: orphan continuation in a prose body"
+ },
+ {
+  "input": "::ILANG::v5.0\n::ACTIVATE{a}\n  [READ:@SRC]\n  T:x\n  =>[Ω]\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "stricter: continuation separated by another line"
+ },
+ {
+  "input": "::ILANG::v5.0\n::ACTIVATE{a}\n  [READ:@SRC]\n\n  =>[Ω]\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "stricter: continuation after a blank line in a body"
+ },
+ {
+  "input": "::ILANG::v5.0\n::PRIORITY{a {\n  x\n}\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "stricter: set-span header with text before its final brace"
+ },
+ {
+  "input": "::ILANG::v5.0\n::LESSON{a} ::WIDGET{x}\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "stricter: same-line trailing token that starts with ::"
+ },
+ {
+  "input": "::ILANG::v5.0\n::UNTRUSTED{id:u|delimiter:EOF} T:x\nopaque\nEOF\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "stricter: trailing token on an opaque header"
+ },
+ {
+  "input": "::ILANG::v5.0\n::GENE{g}\n  ::STATE::X{@A}\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "stricter: nested two-segment name on STATE"
+ },
+ {
+  "input": "::ILANG::v5.0\n::GENE{g}\n  ::PRIOR\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "stricter: nested declaration without braces"
+ },
+ {
+  "input": "::ILANG::v5.0\n::GENE{g}\n  ::PRIOR{a:b} T:x\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "stricter: nested declaration with text after its brace"
+ },
+ {
+  "input": "::ILANG::v5.0\n::ACTIVATE{a}\n  [READ|whr=\"a]\n    =>b\"]\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "stricter: continuation under a line break inside a quoted value (0.4.1)"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea\n:ZZ\"x\"",
+  "direction": "decompile-document",
+  "expect": "E300",
+  "version": "0.5",
+  "label": "unknown declaration code"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea\n:st\"a\"",
+  "direction": "decompile-document",
+  "expect": "E300",
+  "version": "0.5",
+  "label": "lower-case declaration code"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea\n\"::STATE{@A, k:v}\"",
+  "direction": "decompile-document",
+  "expect": "E300",
+  "version": "0.5",
+  "label": "a text line that is a registered declaration"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea\n:LS\"a\"\n \"::PRIOR{x}\"",
+  "direction": "decompile-document",
+  "expect": "E300",
+  "version": "0.5",
+  "label": "a body text that is a nested declaration"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea\n\"=>[FMT]\"",
+  "direction": "decompile-document",
+  "expect": "E300",
+  "version": "0.5",
+  "label": "a text line that is an orphan continuation"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea\n\"::ILANG::v5.0\"\nRD@SR",
+  "direction": "decompile-document",
+  "expect": "E300",
+  "version": "0.5",
+  "label": "a single-operation chain in preamble position"
+ },
+ {
+  "input": "#iml/0.4/88d05d0839c1\n:ST\"@A\"",
+  "direction": "decompile-document",
+  "expect": "E502",
+  "version": "0.4",
+  "label": "a declaration line under a 0.4 header"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1\n\"x\"",
+  "direction": "decompile-document",
+  "expect": "E502",
+  "version": "0.3",
+  "label": "a text line under a 0.3 header"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea\n\"a\\nb\"",
+  "direction": "decompile-document",
+  "expect": "E300",
+  "version": "0.5",
+  "label": "a newline escape inside a text"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea\n:FC\"a\\nb\"",
+  "direction": "decompile-document",
+  "expect": "E300",
+  "version": "0.5",
+  "label": "a newline escape inside a header"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea\n:GN\"g\"\n :PI\"p:q\"\n  RD@SR $",
+  "direction": "decompile-document",
+  "expect": "E300",
+  "version": "0.5",
+  "label": "a nested body line with a chain"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea\n[READ]",
+  "direction": "decompile-document",
+  "expect": "E300",
+  "version": "0.5",
+  "label": "a line starting with an illegal first character"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea\n#comment",
+  "direction": "decompile-document",
+  "expect": "E300",
+  "version": "0.5",
+  "label": "a line starting with a hash that is no header"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea\n\"a\tb\"",
+  "direction": "decompile-document",
+  "expect": "E300",
+  "version": "0.5",
+  "label": "a raw TAB in a text"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea\n\"a\\tb\"",
+  "direction": "decompile-document",
+  "expect": "E300",
+  "version": "0.5",
+  "label": "a TAB escape, which IML has not"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea\n \"x\"",
+  "direction": "decompile-document",
+  "expect": "E300",
+  "version": "0.5",
+  "label": "a space line with no declaration above"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea\n:GN\"g\"\n \"T:a\"\n  \"T:b\"",
+  "direction": "decompile-document",
+  "expect": "E300",
+  "version": "0.5",
+  "label": "a two-space line after a body text"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea\n:GN\"g\"\n :PIT\"0\"\"p:q\"",
+  "direction": "decompile-document",
+  "expect": "E300",
+  "version": "0.5",
+  "label": "a nested declaration with a prefix"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea\n:GN\"g\"\n :PT{",
+  "direction": "decompile-document",
+  "expect": "E300",
+  "version": "0.5",
+  "label": "a nested span"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea\n:ST::X\"@A\"",
+  "direction": "decompile-document",
+  "expect": "E300",
+  "version": "0.5",
+  "label": "a second segment on a declaration other than MODULE"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea\n:SY\"hello\"",
+  "direction": "decompile-document",
+  "expect": "E300",
+  "version": "0.5",
+  "label": "a double-brace narrative without its addressing"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea\n:ST\"a\"\"b\"",
+  "direction": "decompile-document",
+  "expect": "E300",
+  "version": "0.5",
+  "label": "text after a declaration header"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea\n:PT{\"x\"",
+  "direction": "decompile-document",
+  "expect": "E300",
+  "version": "0.5",
+  "label": "a wrapped declaration without its closing line"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea\n:UN\"id:u|delimiter:EOF\"\n \"EOF\"",
+  "direction": "decompile-document",
+  "expect": "E300",
+  "version": "0.5",
+  "label": "an opaque line that is the delimiter"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea\n:ETT0\"x\"",
+  "direction": "decompile-document",
+  "expect": "E300",
+  "version": "0.5",
+  "label": "a prefix that is not quoted"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea\n:ST\"a\"\n\n:ST\"b\"",
+  "direction": "decompile-document",
+  "expect": "E300",
+  "version": "0.5",
+  "label": "a blank line in a document"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea\n:ST\"a\"\n#iml/0.5/7e29fae7f5ea",
+  "direction": "decompile-document",
+  "expect": "E502",
+  "version": "0.5",
+  "label": "a second header in a document"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea :ST\"a\"",
+  "direction": "decompile-document",
+  "expect": "E502",
+  "version": "0.5",
+  "label": "a message given to decompile_doc"
+ },
+ {
+  "input": "#iml/0.5/88d05d0839c1\n:ST\"a\"",
+  "direction": "decompile-document",
+  "expect": "E502",
+  "version": "0.5",
+  "label": "a 0.5 header with the 0.2 digest"
+ },
+ {
+  "input": "#iml/0.4/7e29fae7f5ea\nRD",
+  "direction": "decompile-document",
+  "expect": "E502",
+  "version": "0.4",
+  "label": "a 0.4 header with the 0.5 digest"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea\n:AC\"a\"\n ZZ@SR",
+  "direction": "decompile-document",
+  "expect": "E304",
+  "version": "0.5",
+  "label": "an unknown root in a body chain"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea\n:AC\"a\"\n RDzz=1",
+  "direction": "decompile-document",
+  "expect": "E302",
+  "version": "0.5",
+  "label": "an unknown key code in a body chain"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea\nRDpt=~x",
+  "direction": "decompile-document",
+  "expect": "E303",
+  "version": "0.5",
+  "label": "a value code outside its table"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea\nRD@ZZ",
+  "direction": "decompile-document",
+  "expect": "E200",
+  "version": "0.5",
+  "label": "an unknown entity mark in a document chain"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea :ST\"a\"",
+  "direction": "decompile",
+  "expect": "E502",
+  "version": "0.5",
+  "label": "a declaration in a message"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea \"x\"",
+  "direction": "decompile",
+  "expect": "E502",
+  "version": "0.5",
+  "label": "a text line in a message"
  }
 ]

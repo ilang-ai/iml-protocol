@@ -1,7 +1,10 @@
 """Golden corpus on both surfaces, both directions, the document form, plus coverage of
 the dimensions the design lists. corpus/golden/*.iml is the 0.2 record (read with
 version="0.2"); corpus/golden-0.3/*.iml is the 0.3 record, read by the default reader;
-what compile writes in 0.4 is that text under the 0.4 header (to04 below)."""
+what compile writes in 0.5 is that text under the 0.5 header (to05 below), and the same
+text under the 0.4 header (to04) is still read by the default reader. 0.5 changed on
+purpose: the header compile writes (#iml/0.5/ and the 0.5 registry digest), the default
+reader (0.5; 0.4 and 0.3 headers read without a flag), and version="0.4" names no surface."""
 
 import re
 import subprocess
@@ -12,8 +15,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from iml import (Chain, IMLError, Op, Value, compile, compile_document, decompile, default_registry,  # noqa: E402
-                 is_document, parse_L2, print_L2)
+from iml import (DEFAULT_VERSION, Chain, IMLError, Op, Value, compile, compile_document, decompile,  # noqa: E402
+                 default_registry, is_document, parse_L2, print_L2)
 
 GOLDEN = ROOT / "corpus" / "golden"          # .ilang sources shared by both surfaces; .iml is the 0.2 record
 GOLDEN_03 = ROOT / "corpus" / "golden-0.3"   # .iml expected on the 0.3 surface
@@ -25,7 +28,7 @@ RE_HEAD = re.compile(r"\[([^\[\]:|]+)")
 # 057 `@not_an_entity` is bare in 0.2 and quoted in 0.3; 068 `Φ` and 069 `→arrow` are
 # quoted in 0.2 and bare in 0.3; 070 `Ω` is bare content on both and must not be mapped.
 SPELLING_DIFFERS = {"057", "068", "069", "070"}
-H04, H03 = "#iml/0.4/", "#iml/0.3/"
+H05, H04, H03 = "#iml/0.5/7e29fae7f5ea", "#iml/0.4/", "#iml/0.3/"
 
 
 def to04(message03):
@@ -33,6 +36,13 @@ def to04(message03):
     and the digest are the same; 0.4 adds only the verb reference, absent from 0.3)."""
     assert message03.startswith(H03)
     return H04 + message03[len(H03):]
+
+
+def to05(message03):
+    """What compile writes in 0.5 for a 0.3 record: the same chain text under the 0.5
+    header (the 0.5 registry's digest)."""
+    assert message03.startswith(H03 + "88d05d0839c1")
+    return H05 + message03[len(H03 + "88d05d0839c1"):]
 
 
 def read_one_line(path):
@@ -58,7 +68,8 @@ class TestGolden(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.reg = default_registry()
-        cls.h04 = cls.reg.header
+        cls.hw = cls.reg.header                  # the header compile writes (0.5)
+        cls.h04 = cls.reg.header_for("0.4")
         cls.h03 = cls.reg.header_for("0.3")
         cls.h02 = cls.reg.header_for("0.2")
         cls.quads = golden()
@@ -86,15 +97,16 @@ class TestGolden(unittest.TestCase):
     def test_compile_matches_expected(self):
         for stem, src, expected02, expected03 in self.quads:
             with self.subTest(stem=stem):
-                self.assertEqual(compile(self.asts[stem]), to04(expected03))
-                self.assertEqual(compile(self.asts[stem], version="0.4"), to04(expected03))
+                self.assertEqual(compile(self.asts[stem]), to05(expected03))
+                self.assertEqual(compile(self.asts[stem], version="0.5"), to05(expected03))
                 self.assertEqual(compile(self.asts[stem], version="0.2"), expected02)
 
     def test_decompile_matches_ast(self):
         for stem, src, expected02, expected03 in self.quads:
             with self.subTest(stem=stem):
-                self.assertEqual(decompile(to04(expected03)), self.asts[stem])
-                self.assertEqual(decompile(to04(expected03), version="0.4"), self.asts[stem])
+                self.assertEqual(decompile(to05(expected03)), self.asts[stem])
+                self.assertEqual(decompile(to04(expected03)), self.asts[stem])     # a 0.4 header, same reader
+                self.assertEqual(decompile(to04(expected03), version="0.5"), self.asts[stem])
                 self.assertEqual(decompile(expected03), self.asts[stem])   # the 0.3 record, same reader
                 self.assertEqual(decompile(expected02, version="0.2"), self.asts[stem])
 
@@ -136,6 +148,7 @@ class TestGolden(unittest.TestCase):
             self.assertTrue(expected02.startswith(self.h02 + " "), stem)
             self.assertEqual(expected03.count("\n"), 0)
             self.assertFalse(expected03.endswith(" "), stem)
+        self.assertEqual(self.hw, "#iml/0.5/7e29fae7f5ea")
         self.assertEqual(self.h04, "#iml/0.4/88d05d0839c1")
         self.assertEqual(self.h03, "#iml/0.3/88d05d0839c1")
         self.assertEqual(self.h02, "#iml/0.2/88d05d0839c1")
@@ -143,7 +156,7 @@ class TestGolden(unittest.TestCase):
     def test_worked_example(self):
         ast = parse_L2(WORKED_EXAMPLE)
         message = compile(ast)
-        self.assertEqual(message, self.h04 + " " + WORKED_03)
+        self.assertEqual(message, self.hw + " " + WORKED_03)
         self.assertEqual(print_L2(decompile(message)), WORKED_EXAMPLE)
         self.assertEqual(print_L2(decompile(self.h03 + " " + WORKED_03)), WORKED_EXAMPLE)
         message02 = compile(ast, version="0.2")
@@ -154,19 +167,20 @@ class TestGolden(unittest.TestCase):
         order = [stem for stem, _, _, _ in self.quads]
         chains = [self.asts[stem] for stem in order]
         document = compile_document(chains)
-        expected = self.h04 + "\n" + "\n".join(body(e03) for _, _, _, e03 in self.quads)
+        expected = self.hw + "\n" + "\n".join(body(e03) for _, _, _, e03 in self.quads)
         self.assertEqual(document, expected)
         self.assertTrue(is_document(document))
         self.assertFalse(is_document(compile(chains[0])))
         self.assertEqual(decompile(document), chains)
-        self.assertEqual(decompile(self.h03 + document[len(self.h04):]), chains)   # the 0.3 document, same reader
+        self.assertEqual(decompile(self.h03 + document[len(self.hw):]), chains)   # the 0.3 document, same reader
+        self.assertEqual(decompile(self.h04 + document[len(self.hw):]), chains)   # the 0.4 document, same reader
         self.assertEqual(decompile(document + "\n"), chains)
         self.assertEqual(decompile(document.replace("\n", "\r\n")), chains)
         self.assertEqual(decompile(document.replace("\n", "\r\n") + "\r\n"), chains)
         self.assertEqual([print_L2(c) for c in decompile(document)], [print_L2(c) for c in chains])
         self.assertEqual(compile_document(decompile(document)), document)
         one = compile_document(chains[:1])
-        self.assertEqual(one, self.h04 + "\n" + body(self.quads[0][3]))
+        self.assertEqual(one, self.hw + "\n" + body(self.quads[0][3]))
         self.assertEqual(decompile(one), chains[:1])
         with self.assertRaises(IMLError) as cm:
             compile_document([])
@@ -310,7 +324,7 @@ class TestAst(unittest.TestCase):
         for text, code in ((self.h04 + " RDΦGH", "E300"), (self.h04 + " Ω", "E300"), (self.h04 + " RD→XL", "E300"),
                            (self.h04 + " RD@GH→$", "E300"), (self.h02 + " RD@GH", "E300"), (self.h02 + " RD $", "E300")):
             with self.assertRaises(IMLError) as cm:
-                decompile(text, version="0.4" if text.startswith("#iml/0.4/") else "0.2")
+                decompile(text, version="0.2" if text.startswith("#iml/0.2/") else DEFAULT_VERSION)
             self.assertEqual(cm.exception.code, code, text)
 
     def test_space_is_the_separator_and_quotes_protect_it(self):
@@ -410,8 +424,12 @@ class TestAst(unittest.TestCase):
             decompile(m04, version="0.2")
         self.assertEqual(cm.exception.code, "E502")
         self.assertEqual(decompile(m02, version="0.2"), decompile(m04))
+        # 0.5: version="0.4" names no surface either (the default reader reads a 0.4 header)
+        with self.assertRaises(ValueError) as cm:
+            compile(a, version="0.4")
+        self.assertIn("default reader", str(cm.exception))
         with self.assertRaises(ValueError):
-            compile(a, version="0.5")
+            decompile(m04, version="0.4")
         with self.assertRaises(ValueError):
             decompile(m04, version="0.1")
         # 0.3 names no surface: compile writes 0.4 only, and the default reader reads a 0.3 header
@@ -497,7 +515,7 @@ class TestCli(unittest.TestCase):
         stem, src, expected02, expected03 = golden()[0]
         r = self.run_cli("compile", str(GOLDEN / (stem + ".ilang")))
         self.assertEqual(r.returncode, 0, r.stderr)
-        self.assertEqual(r.stdout.strip(), to04(expected03))
+        self.assertEqual(r.stdout.strip(), to05(expected03))
         r = self.run_cli("decompile", str(GOLDEN_03 / (stem + ".iml")))   # the 0.3 record, read without a flag
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertEqual(r.stdout.strip(), print_L2(parse_L2(src)))
@@ -512,19 +530,20 @@ class TestCli(unittest.TestCase):
     def test_stdin_and_errors(self):
         r = self.run_cli("compile", stdin=WORKED_EXAMPLE + "\n")
         self.assertEqual(r.returncode, 0, r.stderr)
-        self.assertTrue(r.stdout.startswith("#iml/0.4/"))
+        self.assertTrue(r.stdout.startswith("#iml/0.5/"))
         r = self.run_cli("compile", stdin="[REED]\n")
         self.assertEqual(r.returncode, 1)
         self.assertIn("E304", r.stderr)
         r = self.run_cli("decompile", stdin="no header\n")
         self.assertEqual(r.returncode, 1)
         self.assertIn("E502", r.stderr)
+        r = self.run_cli("decompile", "--version", "0.6", stdin="")
+        self.assertEqual(r.returncode, 2)
+        for v in ("0.3", "0.4"):          # 0.5: the default reader reads both headers, neither is a flag
+            r = self.run_cli("decompile", "--version", v, stdin="")
+            self.assertEqual(r.returncode, 2)
+            self.assertIn("default reader", r.stderr)
         r = self.run_cli("decompile", "--version", "0.5", stdin="")
-        self.assertEqual(r.returncode, 2)
-        r = self.run_cli("decompile", "--version", "0.3", stdin="")
-        self.assertEqual(r.returncode, 2)
-        self.assertIn("default reader", r.stderr)
-        r = self.run_cli("decompile", "--version", "0.4", stdin="")
         self.assertEqual(r.returncode, 0)
         r = self.run_cli("compile", "--version", "0.2", stdin="")
         self.assertEqual(r.returncode, 2)
@@ -561,13 +580,14 @@ class TestCli(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertIn("OK", r.stdout)
         self.assertIn("document OK", r.stdout)
-        self.assertIn("#iml/0.4/", r.stdout)
+        self.assertIn("#iml/0.5/", r.stdout)
         r = self.run_cli("check-registry")
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertIn("verbs 88", r.stdout)
         self.assertIn(default_registry().digest, r.stdout)
-        self.assertIn("header #iml/0.4/88d05d0839c1\n", r.stdout)
-        self.assertIn("header #iml/0.3/88d05d0839c1 (read by the default reader)", r.stdout)
+        self.assertIn("header #iml/0.5/7e29fae7f5ea\n", r.stdout)
+        self.assertIn("header #iml/0.4/88d05d0839c1 (read by the default reader, chains only)", r.stdout)
+        self.assertIn("header #iml/0.3/88d05d0839c1 (read by the default reader, chains only)", r.stdout)
         self.assertIn("header #iml/0.2/88d05d0839c1 (read only, --version 0.2)", r.stdout)
 
 

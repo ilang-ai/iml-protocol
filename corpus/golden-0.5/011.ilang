@@ -1,0 +1,11 @@
+::ILANG::v5.0
+::MODULE::CORE{
+  [WHAT] I-Lang v5.0 defines judgment as vector composition.
+  [LAYER:A|type=exact_predicate|mode=binary]
+  Free prose is legal here.
+}
+
+::MODULE::DEMO{
+  [WHAT] a module of tags and prose.
+  Free prose is legal here.
+}

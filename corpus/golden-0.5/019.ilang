@@ -1,0 +1,27 @@
+::ILANG::v5.0
+::ACTIVATE{spec_reader|protocol:iLang_v5.0}
+  [READ:@SPEC|src=...]
+    =>[PARS|typ=v5.0]
+    =>[LERN|whr=judgment_layer]
+  ON:spec_updated
+::GENE{verify_first|conf:confirmed|scope:global}
+  T:check_before_execute
+  A:blind_execution⇒fatal
+  ::PRIOR{completion:assume_incomplete}
+    reason_note:one_level_body_ok
+    T:ask_before_irreversible
+
+  ::STATE{@SKY, scope:session}
+    bnd:[0.00,0.00,1.00,0.45]
+::STATE{@SPEC, kind:document}
+[READ:@SPEC|src=github.com/x]
+  =>[PARS|typ=v5.0]
+  =>[Ω]
+[BATC:Σ]
+::LESSON{id:l1|type:build|scope:project|conf:confirmed}
+  Express middleware order matters.
+  [sic] bracket-initial prose is fine inside a prose body
+  [DPLO:@WORKER]=>[CHEK|whr=status:200]=>[Ω]
+::LIST{@POSTER}
+  @BASE
+  @TITLE

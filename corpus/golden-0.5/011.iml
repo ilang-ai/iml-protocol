@@ -1,0 +1,9 @@
+#iml/0.5/7e29fae7f5ea
+"::ILANG::v5.0"
+:ML::CORE{
+ "[WHAT] I-Lang v5.0 defines judgment as vector composition."
+ "[LAYER:A|type=exact_predicate|mode=binary]"
+ "Free prose is legal here."
+:ML::DEMO{
+ "[WHAT] a module of tags and prose."
+ "Free prose is legal here."

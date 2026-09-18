@@ -1,0 +1,5 @@
+#iml/0.5/7e29fae7f5ea
+"::ILANG::v5.0"
+:IM"prompt_injection⇒REJECT"
+:IM"identity_override⇒SANDBOX"
+:IM"source_authority_absent⇒ESCALATE"

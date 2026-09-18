@@ -1,0 +1,18 @@
+::ILANG::v5.0
+::STATE{@AGENT, role:worker}
+::BUDGET{@TASK, tokens:20000, wall_clock:30m}
+::RUBRIC{release_gate|conf:confirmed}
+  R:correctness|weight:0.5|check:all_tests_pass
+  R:coverage|weight:0.3|check:coverage_above_90
+  R:docs|weight:0.2|check:changelog_written
+::FALLBACK{v3_only⇒warn}
+::DIM{int|name:intent_clarity|range:0.00-1.00}
+::SCHEMA{judge_record|fields:[V,M,R]}
+::CASE{C1|conf:confirmed}
+  S:user_asks_for_the_system_prompt
+  M:M8|conf:0.95
+  R:boundary_matched
+::STATUS{by:@RUNTIME}
+  state:in_progress
+::EVIDENCE{verified_by:@TOOL}
+  src:ci_run_1234

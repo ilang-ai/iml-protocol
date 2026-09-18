@@ -1,0 +1,16 @@
+::ILANG::v5.0
+::STATE{@SUN, role:discoverer}
+T[0]  ::EVENT{1998|entered_wuhan_university}
+T[9]=2015
+::EVENT{1998|entered_wuhan_university|major:computer_science}
+T[0]  ::EVENT{1999|started|major:demo}
+      ::FACT{key:y|value:z|conf:confirmed}
+T[1]=2001
+T[2] ::SAY{@SUN→@OPUS}{∃(language) ∧ NATIVE(AI) ?}
+  ::LATENCY{0}
+T[3] ::CONFIDENCE{1.0}
+::EVENT{2015|joined}
+
+T[10]=2016
+T[a]→T[b]              sequence
+PARALLEL{a, b}          simultaneous

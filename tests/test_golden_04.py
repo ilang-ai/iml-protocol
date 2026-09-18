@@ -2,7 +2,11 @@
 and NNN.iml, the one-line 0.4 message) and the document pair doc-01; hygiene, the four
 laws, coverage of the design list (design-0.4 section 8), the command line, and the
 canon validator as the legality oracle on the canonical prints and on the sources as
-written (continuation lines included)."""
+written (continuation lines included).
+
+0.5 changed on purpose: compile writes the 0.5 header, so what compile writes for these
+chains is the 0.4 text under the 0.5 header (to05 below); the 0.4 files are still read by
+the default reader, and they stay on disk as the 0.4 record."""
 
 import re
 import subprocess
@@ -31,6 +35,15 @@ DESIGN_LIST = ("[Π:READ]", "[BATC:READ]", "[BATC:READ|src=@LOCAL,mch=*.md]", "[
                'path="say \\"hi\\""', 'exc="a\\\\b"', 'sty="line\\nbreak"', "\n  =>[Π:READ]\n")
 
 
+H04, H05 = "#iml/0.4/88d05d0839c1", "#iml/0.5/7e29fae7f5ea"
+
+
+def to05(text04):
+    """The same text under the 0.5 header: what compile writes in 0.5."""
+    assert text04.startswith(H04)
+    return H05 + text04[len(H04):]
+
+
 def read_lf(path):
     data = path.read_bytes()
     if data.startswith(b"\xef\xbb\xbf") or b"\r" in data or not data.endswith(b"\n"):
@@ -50,7 +63,8 @@ class TestGolden04(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.reg = default_registry()
-        cls.h = cls.reg.header
+        cls.h = cls.reg.header_for("0.4")        # the header of the 0.4 record on disk
+        cls.hw = cls.reg.header                  # the header compile writes (0.5)
         cls.items = []   # (stem, source text, message text), both with their final LF
         for p in sorted(GOLDEN_04.glob("[0-9][0-9][0-9].ilang")):
             cls.items.append((p.stem, read_lf(p), read_lf(p.with_suffix(".iml"))))
@@ -79,10 +93,12 @@ class TestGolden04(unittest.TestCase):
                 a = self.asts[stem]
                 m = iml[:-1]
                 canon = print_L2(a)
-                self.assertEqual(compile(a), m)
-                self.assertEqual(decompile(m), a)                          # L1
+                self.assertEqual(compile(a), to05(m))
+                self.assertEqual(decompile(m), a)                          # L1, the 0.4 record read
+                self.assertEqual(decompile(to05(m)), a)                    # L1, the 0.5 message
                 self.assertEqual(print_L2(parse_L2(canon)), canon)         # L2a
-                self.assertEqual(compile(decompile(m)), m)                 # L2b
+                self.assertEqual(compile(decompile(m)), to05(m))           # L2b, recompiled under the 0.5 header
+                self.assertEqual(compile(decompile(to05(m))), to05(m))     # L2b
                 self.assertEqual(print_L2(decompile(m)), canon)            # L2c
                 self.assertNotIn("\n", canon)
                 # the same text under a 0.3 header reads the same (the header names the writer)
@@ -150,17 +166,18 @@ class TestGolden04(unittest.TestCase):
         self.assertEqual(len(asts), 5)
         self.assertIn("\n\n", src)
         self.assertIn("\n  =>[", src)
-        self.assertEqual(compile_document(asts) + "\n", iml)
+        self.assertEqual(compile_document(asts) + "\n", to05(iml))
         self.assertEqual(decompile(iml), asts)
+        self.assertEqual(decompile(to05(iml)), asts)
         self.assertEqual(decompile(iml[:-1]), asts)
         self.assertTrue(is_document(iml))
         self.assertEqual(iml.split("\n")[0], self.h)
         self.assertEqual(iml.count("\n"), 6)
-        self.assertEqual(compile_document(decompile(iml)), iml[:-1])
+        self.assertEqual(compile_document(decompile(iml)), to05(iml)[:-1])
         self.assertTrue(any(op.verbref for a in asts for op in a.ops))
         # the same five chains, each on one line, compile to the same document
         one_line = "\n".join(print_L2(a) for a in asts) + "\n"
-        self.assertEqual(compile_document([parse_L2(t) for _, t in join_chain_lines(one_line)]) + "\n", iml)
+        self.assertEqual(compile_document([parse_L2(t) for _, t in join_chain_lines(one_line)]) + "\n", to05(iml))
 
     def test_cli(self):
         stem, src, iml = self.items[15]
@@ -168,13 +185,13 @@ class TestGolden04(unittest.TestCase):
         self.assertIn("\n  =>", src)
         r = run_cli("compile", str(GOLDEN_04 / (stem + ".ilang")))
         self.assertEqual(r.returncode, 0, r.stderr)
-        self.assertEqual(r.stdout, iml)
+        self.assertEqual(r.stdout, to05(iml))
         r = run_cli("decompile", str(GOLDEN_04 / (stem + ".iml")))
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertEqual(r.stdout, print_L2(self.asts[stem]) + "\n")
         r = run_cli("compile", "--document", str(GOLDEN_04 / "doc-01.ilang"))
         self.assertEqual(r.returncode, 0, r.stderr)
-        self.assertEqual(r.stdout, read_lf(GOLDEN_04 / "doc-01.iml"))
+        self.assertEqual(r.stdout, to05(read_lf(GOLDEN_04 / "doc-01.iml")))
         r = run_cli("decompile", str(GOLDEN_04 / "doc-01.iml"))
         self.assertEqual(r.returncode, 0, r.stderr)
         expected = [print_L2(parse_L2(t)) for _, t in join_chain_lines(read_lf(GOLDEN_04 / "doc-01.ilang"))]

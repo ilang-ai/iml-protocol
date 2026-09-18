@@ -1,0 +1,13 @@
+::ILANG::v5.0::SPEC
+[TYPE:protocol_specification]
+[TYPE:profile][SCOPE:public][LANG:en]
+[LIST:known_repos][DESC:tag_names_may_collide_with_verbs_in_preamble]
+I-Lang v3.0 Final
+Max (@SUN) designed, Claude Opus co-authored, GPT red-teamed
+::LIST{@REPOS}
+  some/repo → prose line is fine inside LIST
+  ilang-ai/ilang-spec
+→ an annotation line at top level
+<<<EOF_note
+::STATE{@SPEC, kind:document}
+::ILANG::v5.0::END
