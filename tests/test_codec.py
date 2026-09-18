@@ -328,7 +328,7 @@ class TestAst(unittest.TestCase):
             self.assertEqual(cm.exception.code, "E300", text)
 
     def test_raw_control_characters_inside_quotes(self):
-        for ch in ("\x00", "\t", "\n", "\x1f", "\x7f", " ", " "):
+        for ch in ("\x00", "\t", "\n", "\x1f", "\x7f", "\x85", "\u2028", "\u2029"):
             with self.assertRaises(IMLError) as cm:
                 parse_L2('[READ|path="a%sb"]' % ch)
             self.assertEqual(cm.exception.code, "E300", repr(ch))
@@ -342,6 +342,37 @@ class TestAst(unittest.TestCase):
         self.assertEqual(a.ops[0].mods[0][1].text, "a\nb")
         self.assertEqual(print_L2(a), '[READ|path="a\\nb"]')
         self.assertEqual(body(compile(a)), 'RDpt="a\\nb"')
+
+    def test_control_characters_in_a_hand_built_value_have_no_spelling(self):
+        """0.4.1: compile, compile_document and print_L2 wrote a raw control character
+        from a hand-built AST, a text their own readers refuse. They raise E300 now; the
+        newline keeps its escape."""
+        for ch in ("\t", "\r", "\x00", "\x7f", "\x85", "\u2028", "\u2029", "\x1f"):
+            for kind in ("quoted", "bare"):
+                chain = Chain([Op("LIST"), Op("READ", None, [("fmt", Value("bare", "md")), ("path", Value(kind, "a" + ch + "b"))])])
+                for name, fn in (("compile", compile), ("print_L2", print_L2),
+                                 ("compile_document", lambda c: compile_document([c])),
+                                 ("compile 0.2", lambda c: compile(c, version="0.2"))):
+                    with self.subTest(ch="U+%04X" % ord(ch), kind=kind, fn=name):
+                        with self.assertRaises(IMLError) as cm:
+                            fn(chain)
+                        self.assertEqual((cm.exception.code, cm.exception.op_index, cm.exception.offset), ("E300", 1, None))
+                        self.assertIn("U+%04X" % ord(ch), cm.exception.message)
+        with self.assertRaises(IMLError) as cm:
+            compile_document([Chain([Op("READ")]), Chain([Op("READ", None, [("path", Value("quoted", "a\tb"))])])])
+        self.assertEqual(cm.exception.code, "E300")
+        self.assertIn("chain 1", cm.exception.message)
+        # so every text the writers produce is a text the readers accept: the newline is the one escape
+        a = Chain([Op("READ", None, [("path", Value("quoted", "a\nb"))])])
+        self.assertEqual(body(compile(a)), 'RDpt="a\\nb"')
+        self.assertEqual(print_L2(a), '[READ|path="a\\nb"]')
+        self.assertEqual(decompile(compile(a)), a)
+        self.assertEqual(parse_L2(print_L2(a)), a)
+        self.assertEqual(decompile(compile_document([a, a])), [a, a])
+        # other kinds are judged by their own rules: an entity name by its pattern
+        with self.assertRaises(IMLError) as cm:
+            compile(Chain([Op("READ", None, [("src", Value("entity", "A\tB"))])]))
+        self.assertEqual(cm.exception.code, "E200")
 
     def test_header_shape_before_version_and_digest(self):
         h = self.h04

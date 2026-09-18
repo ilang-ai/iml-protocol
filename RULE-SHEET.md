@@ -1,6 +1,6 @@
 # IML (I-Lang Machine Layer) 0.4 rule sheet
 
-IML is a machine spelling of I-Lang operation chains; this sheet is enough to read and write IML 0.4. Every verb root, key code, entity mark and alias comes from `registry/iml-registry-0.2.json` (digest prefix `88d05d0839c1`): use the file, never a guess. The full rules are in `SPEC-IML-0.4.md`.
+IML is a machine spelling of I-Lang operation chains; this sheet is enough to read and write IML 0.4. Verb roots, key codes, entity marks and aliases come from `registry/iml-registry-0.2.json` (digest prefix `88d05d0839c1`): use the file, never a guess. Full rules: `SPEC-IML-0.4.md`.
 
 ## 1. Two shapes
 
@@ -15,7 +15,7 @@ Next `@` opens a target: `@` plus two such characters is a registered entity mar
 
 Next `:` opens a verb reference, after `BT` (BATC) only: two such characters, a verb root (registry; unknown E304); print `[BATC:VERB]`. `:` after another root, `BT:` without such a root, or a target after the reference: E300.
 
-Then modifiers: `kk=value` pairs separated by `,`; a key is two lowercase letters (registry; unknown E302); a value runs to the next `,` or space outside quotes, or to the end of the line. Value kinds, by first character:
+Then modifiers: `kk=value` pairs separated by `,`; a key is two lowercase letters (registry; unknown E302); a value runs to the next `,` or space outside quotes, or to the line end. Value kinds, by first character:
 
 - `"`: quoted; escapes `\"` `\\` `\n`; the content is the unescaped text, spaces and commas included. A raw control character (U+0000 to U+001F, U+007F, U+0085, U+2028, U+2029) inside quotes is E300.
 - `@`: entity reference, the two target forms; it becomes `@NAME`.
@@ -25,18 +25,18 @@ Then modifiers: `kk=value` pairs separated by `,`; a key is two lowercase letter
 
 ## 3. Writing I-Lang (canonical print)
 
-`[VERB:@TARGET|k=v,k=v]=>[VERB|k=v]=>[Ω]`. Verb by canon name; OUT as `[Ω]` or `[Ω|k=v]`; a verb reference as `[BATC:VERB]`, never `Π` or an alias. Omit `:@TARGET` without a target, and `|` with the list without modifiers. Ops joined by `=>`, on one line. A value prints bare unless empty, containing whitespace or one of `, | ] [ " \`, or starting with `@`; else quoted with the escapes above. `= > :` are content. An entity reference prints `@NAME`. No whitespace anywhere; a document prints one line per chain, in order.
+`[VERB:@TARGET|k=v,k=v]=>[VERB|k=v]=>[Ω]`. Verb by canon name; OUT as `[Ω]` or `[Ω|k=v]`; a verb reference as `[BATC:VERB]`, never `Π` or an alias. Without a target omit `:@TARGET`; without modifiers omit `|` and the list. Ops joined by `=>`, on one line. A value prints bare unless empty, containing whitespace or one of `, | ] [ " \`, or starting with `@`; else quoted with the escapes above. `= > :` are content. An entity reference prints `@NAME`. No whitespace anywhere; a document prints one line per chain, in order.
 
 ## 4. Writing IML (I-Lang to IML)
 
-Input: `[VERB(:@TARGET)?(|k=v,k=v)?]` joined by `=>`; whitespace around the chain or a dangling `=>` is E300. A line whose first non-blank characters are `=>` continues the chain above it: drop its leading whitespace and join (trailing whitespace is E300). With no chain above it (at the start, or after a blank line, which ends a chain) it is E300 "orphan `=>` continuation: no preceding operation line". Parse the joined text as one line. A bare value runs to the next `,` `|` or `]`; `[ " \` inside it E303; whitespace inside it or a `|` after it E300. An alias means its verb (registry).
+Input: `[VERB(:@TARGET)?(|k=v,k=v)?]` joined by `=>`; whitespace around the chain or a dangling `=>` is E300. A line whose first non-blank characters are `=>` continues the chain above it: drop its leading whitespace and join (trailing whitespace is E300); the text so far must end with `]` outside quotes, else E300. With no chain above it (at the start, or after a blank or whitespace-only line, which ends a chain) it is E300 "orphan `=>` continuation: no preceding operation line". Parse the joined text as one line. A bare value runs to the next `,` `|` or `]`; `[ " \` inside it E303; whitespace inside it or a `|` after it E300. An alias means its verb (registry).
 
 - Verb or alias to its root (registry; unknown E304). `[OUT]` and `[Ω]` become `$`, with no target.
 - `@TARGET`: registered, `@` plus its mark; custom, `@{NAME}`; the name must match `[A-Z][A-Z0-9_]*` (else E200).
 - `[BATC:VERB]` or `[Π:VERB]` (canon §3.9; BATC only: elsewhere a target without `@` is E300): `BT:` plus the verb's root, an alias meaning its verb (`[Π:Σ]` is `BT:MR`); unknown (`REED`, `read`) E304; OUT or `Ω` E502. `[BATC:@SRC]` is an entity target; `[BATC|op=READ]` is a string modifier (`BTop=READ`); never convert one into the other.
 - Key to its code (registry; unknown E302); keys keep their order, separated by `,`.
 - Value: a bare `@NAME` is an entity reference, `@` plus mark or `@{NAME}`. Otherwise take the content (unescape a quoted string): bare if not empty, without `, " \` or whitespace, and not starting with `~ @ $ "`; else quoted with the escapes. Never change the characters.
-- Header `#iml/0.4/` plus the digest prefix, then the ops joined by one space on one line, whatever the source layout, and nothing else. Document: the header alone on the first line, then one chain per line, in order.
+- Header `#iml/0.4/` plus the digest prefix, then the ops joined by one space on one line whatever the source layout, nothing else. Document: as in section 1, chains in order.
 
 ## 5. Outside the subset
 
@@ -44,7 +44,7 @@ Report E502 and stop: a `::` declaration, `T[...]`, `PARALLEL{}`, a comment or a
 
 ## 6. On error
 
-Stop at the first error. Report the code and the 0-based character offset (compiling: also the op index; a multi-line chain: its first line, the offset in the joined text). Never guess a root, key, mark or verb; never repair, reorder or drop a value. Six codes, no other:
+Stop at the first error. Report the code and the 0-based character offset (compiling: also the op index; a multi-line chain: its first line, the offset in the joined text). Never guess a root, key, mark or verb; never repair, reorder or drop a value. Six codes only:
 
 - E300 syntax: every case marked E300 above, plus: bad header shape (judged before the version and the digest), unterminated quote, bad escape, empty value, missing `=`, two spaces between ops, a tab, a blank line in a document, a header with no chain, a second line after a message line, `Φ Ω →` or any other stray character in a syntax position.
 - E304 unknown root, verb or verb reference (`OT` included). E302 unknown key code or key. E200 unknown mark or bad entity name.

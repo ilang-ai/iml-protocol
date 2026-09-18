@@ -1,9 +1,12 @@
 """0.4, flow within the canon (SPEC-IML-0.4.md sections 2 to 7): the verb reference
-target of BATC, the multi-line chain join on the compile side, header acceptance (0.4
-written; 0.3 read by the same reader; 0.2 only with version="0.2"; version="0.3" names
-no surface), and the two assertions over the 72 chains of corpus/golden/: their 0.4
-message is the 0.3 record under the 0.4 header, and the 0.3 record decompiles under the
-default reader to the same canonical text as its source."""
+target of BATC, the multi-line chain join on the compile side (a continuation line is
+joined only after a closed operation; a line of whitespace only is a blank line), header
+acceptance (0.4 written; 0.3 read by the same reader; 0.2 only with version="0.2";
+version="0.3" names no surface), what the command line does with its input bytes (one
+leading byte order mark dropped, input that is not UTF-8 reported as E300), and the two
+assertions over the 72 chains of corpus/golden/: their 0.4 message is the 0.3 record
+under the 0.4 header, and the 0.3 record decompiles under the default reader to the same
+canonical text as its source."""
 
 import subprocess
 import sys
@@ -13,11 +16,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "tests"))
 
 from iml import (DEFAULT_VERSION, VERSIONS, Chain, IMLError, Op, Value, compile, compile_document,  # noqa: E402
                  decompile, default_registry, parse_L2, print_L2)
-from iml.__main__ import join_chain_lines, non_empty_lines  # noqa: E402
+from iml.__main__ import UNTERMINATED, join_chain_lines, non_empty_lines, parse_chain  # noqa: E402
 from iml.codec import SURFACES, surface  # noqa: E402
+from iml.l2 import ends_with_closed_operation  # noqa: E402
+from test_roundtrip import PREAMBLE_LINES, run_validator  # noqa: E402
 
 GOLDEN = ROOT / "corpus" / "golden"
 GOLDEN_03 = ROOT / "corpus" / "golden-0.3"
@@ -25,6 +31,7 @@ WORKED = "[READ:@GH|path=readme.md]=>[XLAT|lng=zh]=>[FMT|fmt=md]=>[Ω]"
 NOT_AN_ENTITY = "is not an @ENTITY (v3.0 \u00a72.2; BATC/Π excepted)"
 ORPHAN = "orphan `=>` continuation: no preceding operation line"
 SECOND_CHAIN = "a second operation chain on the line: IML carries one chain per line"
+BOM = b"\xef\xbb\xbf"
 # the four examples of design-0.4 section 3 (the roots are the registry's, see test_registry)
 DESIGN_EXAMPLES = [
     ("[LIST:@LOCAL|mch=*.md]=>[Π:READ]=>[Σ]=>[Ω]", "LS@LCmc=*.md BT:RD MR $",
@@ -40,8 +47,10 @@ def body(message):
 
 
 def run_cli(*args, stdin=None):
-    r = subprocess.run([sys.executable, "-m", "iml", *args], cwd=str(ROOT),
-                       input=None if stdin is None else stdin.encode("utf-8"), capture_output=True)
+    """stdin is text (sent as UTF-8) or the bytes to send as they are."""
+    if isinstance(stdin, str):
+        stdin = stdin.encode("utf-8")
+    r = subprocess.run([sys.executable, "-m", "iml", *args], cwd=str(ROOT), input=stdin, capture_output=True)
     r.stdout = r.stdout.decode("utf-8").replace("\r\n", "\n")
     r.stderr = r.stderr.decode("utf-8").replace("\r\n", "\n")
     return r
@@ -151,15 +160,20 @@ class TestVerbRef(unittest.TestCase):
                          [Chain([Op("BATC", verbref="READ")]), Chain([Op("BATC", verbref="MERGE"), Op("OUT")])])
 
     def test_ilang_errors(self):
-        for src, code, text in (("[BATC:REED]", "E304", "BATC verb reference 'REED' is not a registered verb or alias"),
-                                ("[BATC:read]", "E304", "BATC verb reference 'read' is not a registered verb or alias"),
+        for src, code, text in (("[BATC:REED]", "E304", "BATC verb reference `REED` is not a registered verb or alias"),
+                                ("[BATC:read]", "E304", "BATC verb reference `read` is not a registered verb or alias"),
                                 ("[Π:Ω]", "E502", "OUT cannot be batched: not representable in IML"),
                                 ("[BATC:OUT]", "E502", "OUT cannot be batched"),
-                                ("[LOOP:READ]", "E300", "operation target 'READ' " + NOT_AN_ENTITY),
-                                ("[READ:x]", "E300", "operation target 'x' " + NOT_AN_ENTITY),
+                                ("[LOOP:READ]", "E300", "operation target `READ` " + NOT_AN_ENTITY),
+                                ("[READ:x]", "E300", "operation target `x` " + NOT_AN_ENTITY),
                                 ("[BATC:]", "E300", "empty target after `:`"),
                                 ("[BATC: READ]", "E300", "whitespace is not allowed outside a quoted value"),
-                                ("[BATC:READ:X]", "E304", "'READ:X'"),
+                                ("[BATC:READ ]", "E300", "whitespace is not allowed outside a quoted value"),
+                                ("[BATC:READ|]", "E300", "modifier lacks `=`"),
+                                ("[BATC:READ]=>", "E300", "missing operation after `=>`"),
+                                ("[READ]=>=>[FMT]", "E300", "expected `[` to open an operation"),
+                                ("[BATC:READ:X]", "E304", "`READ:X`"),
+                                ("[Φ:@GH]", "E304", "unknown verb"),          # the validator: E305, unknown alias
                                 ("[BATC:@SRC:READ]", "E200", "'@SRC:READ'"),
                                 ("[READ:@SRC]=>[Ω] [FMT]=>[Ω]", "E502", SECOND_CHAIN),
                                 ("[READ] [FMT]", "E502", SECOND_CHAIN),
@@ -183,6 +197,26 @@ class TestVerbRef(unittest.TestCase):
         self.assertEqual(cm.exception.offset, 16)
         # a quoted value keeps its `]`, space and `[`: no second chain there
         self.assertEqual(parse_L2('[READ|path="] ["]').ops[0].mods[0][1], Value("quoted", "] ["))
+
+    def test_messages_follow_the_validator_where_it_has_a_wording(self):
+        """SPEC-IML-0.4.md section 7: the two messages the codec takes from the validator
+        are the validator's, backticks included; the validator's E305 (unknown alias) is
+        E304 in the codec."""
+        lines = ["[LOOP:READ]=>[Ω]", "[LIST:@LOCAL]=>[BATC:REED]=>[Ω]", "[Φ:@GH]=>[Ω]"]
+        rep = run_validator(lines)
+        found = {f["line"] - PREAMBLE_LINES: (f["code"], f["message"]) for f in rep["findings"] if f["level"] == "ERROR"}
+        self.assertEqual(sorted(found), [1, 2, 3])
+        for no, code in ((1, "E300"), (2, "E304")):
+            with self.assertRaises(IMLError) as cm:
+                parse_L2(lines[no - 1])
+            self.assertEqual((cm.exception.code, cm.exception.message), found[no], lines[no - 1])
+            self.assertEqual(cm.exception.code, code)
+            self.assertIn("`", cm.exception.message)
+            self.assertNotIn("'", cm.exception.message)
+        self.assertEqual(found[3][0], "E305")
+        with self.assertRaises(IMLError) as cm:
+            parse_L2(lines[2])
+        self.assertEqual(cm.exception.code, "E304")
 
     def test_iml_errors(self):
         h = self.h
@@ -289,6 +323,82 @@ class TestJoinChainLines(unittest.TestCase):
         self.assertEqual((cm.exception.code, cm.exception.offset), ("E300", 0))
         self.assertEqual(cm.exception.message, ORPHAN)
 
+    def test_continuation_is_joined_only_after_a_closed_operation(self):
+        """0.4.1: the two inputs of the review of 0.4.0 compiled to `RDwh=abc=>def` and
+        `RDwh=abc=>x`, chains that no single line spells and that the validator rejects."""
+        for data, offset in (('[READ|whr="abc\n  =>def"]\n', 14),          # the line break inside a quoted value
+                             ("[READ|whr=abc\n  =>x]\n", 13),              # inside a bare value
+                             ('[READ|whr="a]\n  =>b"]\n', 13),             # `]` before the break, but inside quotes
+                             ('[READ|whr="a\\"]\n  =>b"]\n', 15),          # an escaped quote does not close the value
+                             ("[READ]=>\n  =>[FMT]\n", 8),                 # a line ending in the pipe operator
+                             ("[READ]#c\n  =>[FMT]\n", 8),                 # text after the operation
+                             ("[READ]  \n  =>[FMT]\n", 8),                 # trailing whitespace above the break
+                             ("[READ\n=>[FMT]\n  =>[LIST]\n", 5)):         # further lines go with the refused chain
+            with self.subTest(data=data):
+                (no, err), = join_chain_lines(data)
+                self.assertEqual(no, 1)
+                self.assertIsInstance(err, IMLError)
+                self.assertEqual((err.code, err.message, err.offset), ("E300", UNTERMINATED, offset))
+                with self.assertRaises(IMLError) as cm:
+                    parse_chain(err)
+                self.assertIs(cm.exception, err)
+        self.assertIn("continuation after an unterminated operation line", UNTERMINATED)
+        # a closed operation above the break joins as before, a `]` or a quote inside its quoted value included
+        for data, joined in (('[READ|path="a]"]\n  =>[FMT]\n', '[READ|path="a]"]=>[FMT]'),
+                             ('[READ|path="a\\"]"]\n  =>[FMT]\n', '[READ|path="a\\"]"]=>[FMT]'),
+                             ('[READ|path="a=\\"b"]\n  =>[FMT]\n', '[READ|path="a=\\"b"]=>[FMT]'),
+                             ('[READ|path="x\\\\"]\n  =>[FMT]\n', '[READ|path="x\\\\"]=>[FMT]')):
+            with self.subTest(data=data):
+                self.assertEqual(join_chain_lines(data), [(1, joined)])
+                self.assertEqual(parse_chain(joined), parse_L2(joined))
+                self.assertEqual(len(parse_L2(joined).ops), 2)
+        for text, closed in (("[READ]", True), ("[READ]=>[FMT|fmt=md]", True), ('[READ|path="]"]', True), ("", False),
+                             ("[READ", False), ("[READ]=>", False), ('[READ|path="]', False), ('[READ|path="a\\"]', False),
+                             ("[READ] ", False), ("=>[READ]", True)):
+            self.assertEqual(ends_with_closed_operation(text), closed, text)
+        # the chains before and after a refused chain are read as usual
+        data = "[LIST]\n[READ|whr=abc\n  =>x]\n  =>[FMT]\n\n[FMT]\n  =>[Ω]\n"
+        entries = join_chain_lines(data)
+        self.assertEqual([no for no, _ in entries], [1, 2, 6])
+        self.assertEqual((entries[0][1], entries[2][1]), ("[LIST]", "[FMT]=>[Ω]"))
+        self.assertIsInstance(entries[1][1], IMLError)
+
+    def test_continuation_spellings_the_validator_accepts(self):
+        """SPEC-IML-0.4.md section 0.3: a space after the `=>` of a continuation line, and a
+        `=>` line under a line that ends in `=>`, pass the validator with 0 errors; both
+        are E300 here, reported at the chain's first line."""
+        spaced = "[READ:@SRC]\n  => [Ω]\n"
+        doubled = "[READ:@SRC]=>\n  =>[Ω]\n"
+        for data in (spaced, doubled):
+            rep = run_validator(data.rstrip("\n").split("\n"))
+            self.assertEqual([f for f in rep["findings"] if f["level"] == "ERROR"], [], data)
+        (no, text), = join_chain_lines(spaced)
+        self.assertEqual(text, "[READ:@SRC]=> [Ω]")
+        with self.assertRaises(IMLError) as cm:
+            parse_chain(text)
+        self.assertEqual((cm.exception.code, cm.exception.offset), ("E300", 13))
+        (no, err), = join_chain_lines(doubled)
+        self.assertEqual((no, err.code, err.message, err.offset), (1, "E300", UNTERMINATED, 13))
+
+    def test_whitespace_only_line_is_a_blank_line(self):
+        """As the validator reads it: the line ends the current chain, opens none, and is
+        skipped; a `=>` line after it is an orphan."""
+        for blank in ("   ", "\t", " \t ", "  \r", "\u3000", "\xa0 "):
+            with self.subTest(blank=blank):
+                data = "[READ]\n" + blank + "\n  =>[FMT]\n"
+                self.assertEqual(join_chain_lines(data), [(1, "[READ]"), (3, "=>[FMT]")])
+                data = "[READ]\n  =>[FMT]\n" + blank + "\n[LIST]\n" + blank + "\n"
+                self.assertEqual(join_chain_lines(data), [(1, "[READ]=>[FMT]"), (4, "[LIST]")])
+        self.assertEqual(join_chain_lines("  \n\t\n"), [])
+        rep = run_validator(["[READ:@SRC]", "   ", "  =>[Ω]"])
+        errors = [(f["line"] - PREAMBLE_LINES, f["code"], f["message"]) for f in rep["findings"] if f["level"] == "ERROR"]
+        self.assertEqual(errors, [(3, "E300", ORPHAN)])
+        r = run_cli("compile", stdin="[READ]\n   \n[FMT]\n \t \n  =>[LIST]\n")
+        self.assertEqual(r.returncode, 1)
+        self.assertEqual(r.stdout.splitlines(), [default_registry().header + " RD", default_registry().header + " FM"])
+        self.assertIn("<stdin>:5: E300", r.stderr)
+        self.assertIn(ORPHAN, r.stderr)
+
     def test_offsets_count_in_the_joined_text(self):
         data = "[READ:@SRC]\n  =>[FMT|pth=x]\n  =>[Ω]\n"
         (no, text), = join_chain_lines(data)
@@ -348,6 +458,24 @@ class TestJoinChainLines(unittest.TestCase):
         self.assertEqual(r.returncode, 1)
         self.assertIn("<stdin>:1: E502", r.stderr)
         self.assertIn(SECOND_CHAIN, r.stderr)
+        # a continuation under an unterminated operation line: the chain's first line, the
+        # chains before it already printed, nothing compiled from the broken one
+        for stdin in ('[LIST]\n[READ|whr="abc\n  =>def"]\n', "[LIST]\n[READ|whr=abc\n  =>x]\n"):
+            r = run_cli("compile", stdin=stdin)
+            self.assertEqual(r.returncode, 1)
+            self.assertEqual(r.stdout, default_registry().header + " LS\n")
+            self.assertIn("<stdin>:2: E300 Syntax Error: " + UNTERMINATED, r.stderr)
+            self.assertNotIn("=>def", r.stdout + r.stderr)
+            r = run_cli("compile", "--document", stdin=stdin)
+            self.assertEqual((r.returncode, r.stdout), (1, ""))
+            self.assertIn("<stdin>:2: E300", r.stderr)
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "broken.ilang"
+            p.write_bytes(b'[READ|whr="abc\n  =>def"]\n')
+            r = run_cli("roundtrip", str(p))
+        self.assertEqual(r.returncode, 1)
+        self.assertIn(":1: E300", r.stderr)
+        self.assertIn(UNTERMINATED, r.stderr)
 
     def test_decompile_direction_does_not_join(self):
         h = default_registry().header
@@ -358,6 +486,91 @@ class TestJoinChainLines(unittest.TestCase):
         r = run_cli("decompile", stdin=h + " RD\n  =>FM\n")
         self.assertEqual(r.returncode, 1)
         self.assertIn("<stdin>:2: E", r.stderr)
+
+
+class TestCommandLineInput(unittest.TestCase):
+    """0.4.1: what read_text does with the bytes it is given. The library functions take
+    text and stay strict."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.h = default_registry().header
+        cls.message = compile(parse_L2(WORKED))
+
+    def test_one_leading_bom_is_dropped(self):
+        src = (WORKED + "\n").encode("utf-8")
+        multi = "[DPLO:@WORKER]\n  =>[CHEK|whr=status:200]\n  =>[Ω]\n".encode("utf-8")
+        document = (self.h + "\nRD\nBT:RD $\n").encode("utf-8")
+        with tempfile.TemporaryDirectory() as tmp:
+            files = {}
+            for name, data in (("bom.ilang", BOM + src), ("bom-multi.ilang", BOM + multi),
+                               ("bom.iml", BOM + (self.message + "\n").encode("utf-8")), ("bom-doc.iml", BOM + document),
+                               ("bom-crlf.ilang", BOM + src.replace(b"\n", b"\r\n")), ("two-boms.ilang", BOM + BOM + src)):
+                files[name] = Path(tmp) / name
+                files[name].write_bytes(data)
+                self.assertTrue(files[name].read_bytes().startswith(b"\xef\xbb\xbf"))
+            for name in ("bom.ilang", "bom-crlf.ilang"):
+                r = run_cli("compile", str(files[name]))
+                self.assertEqual((r.returncode, r.stdout, r.stderr), (0, self.message + "\n", ""), name)
+            r = run_cli("compile", "--document", str(files["bom.ilang"]))
+            self.assertEqual((r.returncode, r.stdout), (0, compile_document([parse_L2(WORKED)]) + "\n"), r.stderr)
+            r = run_cli("compile", str(files["bom-multi.ilang"]))
+            self.assertEqual((r.returncode, r.stdout), (0, self.h + " DP@WR CKwh=status:200 $\n"), r.stderr)
+            r = run_cli("roundtrip", str(files["bom.ilang"]))
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertIn("1 chain(s), 0 failure(s)", r.stdout)
+            r = run_cli("decompile", str(files["bom.iml"]))
+            self.assertEqual((r.returncode, r.stdout), (0, WORKED + "\n"), r.stderr)
+            r = run_cli("decompile", str(files["bom-doc.iml"]))
+            self.assertEqual((r.returncode, r.stdout.splitlines()), (0, ["[READ]", "[BATC:READ]=>[Ω]"]), r.stderr)
+            # one mark is dropped, not two: the second reaches the parser and is refused
+            r = run_cli("compile", str(files["two-boms.ilang"]))
+            self.assertEqual(r.returncode, 1)
+            self.assertIn(":1: E502", r.stderr)
+        # the same on standard input
+        r = run_cli("compile", stdin=BOM + src)
+        self.assertEqual((r.returncode, r.stdout), (0, self.message + "\n"), r.stderr)
+        r = run_cli("decompile", stdin=BOM + document)
+        self.assertEqual((r.returncode, r.stdout.splitlines()), (0, ["[READ]", "[BATC:READ]=>[Ω]"]), r.stderr)
+        r = run_cli("decompile", "--version", "0.2", stdin=BOM + (compile(parse_L2(WORKED), version="0.2") + "\n").encode("utf-8"))
+        self.assertEqual((r.returncode, r.stdout), (0, WORKED + "\n"), r.stderr)
+
+    def test_the_library_stays_strict_about_a_bom(self):
+        for fn, text in ((parse_L2, "\ufeff" + WORKED), (decompile, "\ufeff" + self.message),
+                         (decompile, "\ufeff" + self.h + "\nRD")):
+            with self.assertRaises(IMLError) as cm:
+                fn(text)
+            self.assertEqual((cm.exception.code, cm.exception.offset), ("E502", 0), text)
+        with self.assertRaises(IMLError) as cm:
+            decompile("\ufeff" + compile(parse_L2(WORKED), version="0.2"), version="0.2")
+        self.assertEqual(cm.exception.code, "E502")
+        # inside a value the character is content, as any other
+        a = parse_L2('[READ|path="a\ufeffb"]')
+        self.assertEqual(decompile(compile(a)), a)
+
+    def test_input_that_is_not_utf8_is_e300_without_a_traceback(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "latin1.ilang"
+            p.write_bytes(b"[READ|path=caf\xe9]\n")
+            for args in (("compile",), ("compile", "--document"), ("decompile",), ("decompile", "--version", "0.2"), ("roundtrip",)):
+                r = run_cli(*args, str(p))
+                self.assertEqual(r.returncode, 1, args)
+                self.assertEqual(r.stdout, "")
+                self.assertEqual(r.stderr, "%s:1: E300 Syntax Error: input is not valid UTF-8 (byte offset 14)\n" % p)
+                self.assertNotIn("Traceback", r.stderr)
+            # the offset counts the bytes of the input as read, a dropped byte order mark included
+            p.write_bytes(BOM + b"[READ]\n[FMT|path=\xe9]\n")
+            r = run_cli("compile", str(p))
+            self.assertEqual((r.returncode, r.stdout), (1, ""))
+            self.assertEqual(r.stderr, "%s:1: E300 Syntax Error: input is not valid UTF-8 (byte offset 20)\n" % p)
+        r = run_cli("compile", stdin=b"[READ]\n[FMT|path=\xe9]\n")
+        self.assertEqual((r.returncode, r.stdout), (1, ""))          # nothing is compiled from input that cannot be read
+        self.assertEqual(r.stderr, "<stdin>:1: E300 Syntax Error: input is not valid UTF-8 (byte offset 17)\n")
+        r = run_cli("decompile", stdin=self.message.encode("utf-8") + b" \xff\n")
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("<stdin>:1: E300 Syntax Error: input is not valid UTF-8 (byte offset %d)" % (len(self.message.encode("utf-8")) + 1),
+                      r.stderr)
+        self.assertNotIn("Traceback", r.stderr)
 
 
 class TestHeaderAcceptance(unittest.TestCase):

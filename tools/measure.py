@@ -53,8 +53,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from iml import compile, compile_document, decompile, default_registry, parse_L2, print_L2  # noqa: E402
-from iml.__main__ import join_chain_lines  # noqa: E402
+from iml import compile, compile_document, decompile, default_registry, print_L2  # noqa: E402
+from iml.__main__ import join_chain_lines, parse_chain  # noqa: E402
 
 GOLDEN = ROOT / "corpus" / "golden"
 GOLDEN_04 = ROOT / "corpus" / "golden-0.4"
@@ -159,7 +159,7 @@ def read_sources(directory):
         src = path.read_text(encoding="utf-8").rstrip("\n")
         chains = join_chain_lines(src)
         assert len(chains) == 1, path
-        out.append((path.stem, src, parse_L2(chains[0][1])))
+        out.append((path.stem, src, parse_chain(chains[0][1])))
     return out
 
 

@@ -95,7 +95,7 @@ class TestGolden04(unittest.TestCase):
             lines = src.rstrip("\n").split("\n")
             self.assertTrue(lines[0].startswith("["), stem)
             for line in lines[1:]:
-                self.assertTrue(line.startswith("  =>["), (stem, line))    # two-space indent, SPEC.md section 10 layout
+                self.assertTrue(line.startswith("  =>["), (stem, line))    # two-space indent, as in the E: example of PATCH-2 section 1.7
             one_line = "".join(line.strip() for line in lines)
             self.assertEqual(parse_L2(one_line), self.asts[stem])
             self.assertEqual(compile(parse_L2(one_line)), compile(self.asts[stem]))
@@ -190,7 +190,7 @@ class TestGolden04(unittest.TestCase):
         errors = [f for f in rep["findings"] if f["level"] == "ERROR"]
         self.assertEqual(rep["mode"], "raw")
         self.assertEqual(errors, [], errors[:5])
-        # the sources as written (continuation lines: the validator's B8 rule), doc-01 included
+        # the sources as written (continuation lines: PATCH-2 section 1.7, chain_continuation), doc-01 included
         lines = []
         for _, src, _ in self.items:
             lines.extend(src.rstrip("\n").split("\n"))

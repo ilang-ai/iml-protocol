@@ -1067,5 +1067,48 @@
   "direction": "compile",
   "expect": "E300",
   "label": "space after the pipe operator (whitespace, not a second chain)"
+ },
+ {
+  "input": "[BATC:READ ]",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "space before `]` after a verb reference (the validator: 0 errors)"
+ },
+ {
+  "input": "[BATC:READ|]",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "pipe without a modifier after a verb reference (the validator: 0 errors)"
+ },
+ {
+  "input": "[BATC:READ]=>",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "dangling pipe operator after a verb reference (the validator: 0 errors)"
+ },
+ {
+  "input": "[READ]=>=>[FMT]",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "two pipe operators in a row"
+ },
+ {
+  "input": "[Φ:@GH]",
+  "direction": "compile",
+  "expect": "E304",
+  "label": "a Greek letter that is no alias: E304 here, E305 (unknown alias) in the validator"
+ },
+ {
+  "input": "\ufeff[READ]",
+  "direction": "compile",
+  "expect": "E502",
+  "label": "leading U+FEFF given to parse_L2: the command line drops one byte order mark, the library none"
+ },
+ {
+  "input": "\ufeff#iml/0.4/88d05d0839c1 RD",
+  "direction": "decompile",
+  "expect": "E502",
+  "version": "0.4",
+  "label": "leading U+FEFF given to decompile: no header at offset 0"
  }
 ]

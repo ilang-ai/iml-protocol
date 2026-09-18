@@ -12,6 +12,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: No compiled Python file is tracked
+        run: |
+          if git ls-files | grep -E '__pycache__|[.]pyc$'; then
+            echo "tracked __pycache__ or .pyc paths, listed above: untrack them (git rm --cached)" >&2
+            exit 1
+          fi
       - name: Registry derivation matches the committed file
         run: python tools/derive_registry.py --check
       - name: Unit tests

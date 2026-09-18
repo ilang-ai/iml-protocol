@@ -41,7 +41,9 @@ VALIDATOR = ROOT / "canon" / "ilang_grammar_validator.py"
 GOLDEN = ROOT / "corpus" / "golden"
 MEDIA = {"IMG", "VID", "AUD"}
 BARE_ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._/-:*^#~{}@$Φ→Ω"
-FREE_ALPHABET = "abcdefghijklmnopqrstuvwxyz 0123456789,|][=>\"\\\n:@$~Φ→Ωé中文"
+# the last three characters are non-ASCII value content (U+00E9 and the CJK pair U+4E2D U+6587),
+# written as escapes; the 0.2 marks before them are literal, as everywhere in the tests
+FREE_ALPHABET = "abcdefghijklmnopqrstuvwxyz 0123456789,|][=>\"\\\n:@$~Φ→Ω\u00e9\u4e2d\u6587"
 NUMBERS = ["007", "0", "1", "1.0", "-3", "42", "3.14", "1e5", "0.50", "1.00", "2048x1365", "16:9"]
 CUSTOM = ["MYDATA", "HOUSE_LOOK", "X", "A1", "REPORT_2026", "T_", "ZINE_LOOK", "OUT", "READ"]
 

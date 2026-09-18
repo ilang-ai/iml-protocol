@@ -114,6 +114,20 @@ class TestMalformed(unittest.TestCase):
         for src in ("[Π:READ]", "[BATC:READ]"):
             self.assertNotIn(src, compile_cases)
 
+    def test_0_4_1_cases_cover_the_review_of_0_4_0(self):
+        """The single-line spellings that the validator lets pass and the codec refuses
+        (SPEC-IML-0.4.md section 0.3), the validator's E305 reported as E304, and a byte
+        order mark given to the library, which drops none. The multi-line inputs of that
+        review stand in tests/test_flow.py: a compile case is fed to parse_L2, which joins
+        no lines, so this corpus cannot carry them."""
+        compile_cases = {c["input"]: c["expect"] for c in self.cases if c["direction"] == "compile"}
+        for src, code in (("[BATC:]", "E300"), ("[BATC: READ]", "E300"), ("[BATC:READ ]", "E300"), ("[BATC:READ|]", "E300"),
+                          ("[BATC:READ]=>", "E300"), ("[READ]=>=>[FMT]", "E300"), ("[Φ:@GH]", "E304"),
+                          ("\ufeff[READ]", "E502")):
+            self.assertEqual(compile_cases.get(src), code, src)
+        d04 = {c["input"]: c["expect"] for c in self.cases if c.get("version") == "0.4"}
+        self.assertEqual(d04.get("\ufeff" + H04 + "RD"), "E502")
+
     def test_disjoint_from_golden(self):
         golden_inputs = set()
         for d in (GOLDEN, GOLDEN_03, GOLDEN_04):

@@ -35,9 +35,11 @@ closed: the first error stops it, with a 0-based character offset into the input
 
 compile writes 0.4. The keyword `version="0.2"` on compile exists for the tests and the
 0.2 record (corpus/golden/*.iml); the command line does not expose it, and a verb
-reference has no 0.2 spelling (E502). decompile reads 0.4 and 0.3 by default and 0.2
-with version="0.2"; a header of another version is E502. version="0.3" names no
-surface (ValueError): the default reader reads a 0.3 header.
+reference has no 0.2 spelling (E502). A string value that holds a control character other
+than a newline has no spelling on either surface: compile and compile_document refuse it
+(E300) instead of writing a text that decompile would refuse. decompile reads 0.4 and 0.3
+by default and 0.2 with version="0.2"; a header of another version is E502. version="0.3"
+names no surface (ValueError): the default reader reads a 0.3 header.
 """
 
 import re
@@ -291,8 +293,10 @@ def compile(chain, registry=None, version=DEFAULT_VERSION):
     """AST -> IML message text: header, one space, chain. Strict: an unknown verb is
     E304, an unknown key E302, a bad entity name E200, OUT not last E502, a verb
     reference on a verb other than BATC E300, an unknown verb reference E304, OUT as
-    the reference E502. version selects the surface; the command line writes 0.4 only,
-    and a verb reference has no spelling on the 0.2 surface (E502)."""
+    the reference E502, a control character other than a newline in a string value E300
+    (no reader yields one; only a hand-built AST holds it). version selects the surface;
+    the command line writes 0.4 only, and a verb reference has no spelling on the 0.2
+    surface (E502)."""
     reg = registry or default_registry()
     sf = surface(version)
     return reg.header_for(sf.version) + " " + _compile_chain(chain, reg, sf)
@@ -384,6 +388,12 @@ def _compile_value(val, key, reg, sf, idx):
         if val.text not in reg.value_codes.get(key, {}):
             raise IMLError("E303", "value code ~%s is not in the table of key %s" % (val.text, key), op_index=idx)
         return "~" + val.text
+    for c in val.text:
+        if c != "\n" and is_control(c):
+            # the readers refuse a raw control character (scan_quoted, the bare scan) and
+            # SPEC.md 2.4 has an escape for the newline only: there is nothing to write
+            raise IMLError("E300", "control character U+%04X in a value has no spelling "
+                           "(only a newline has an escape, \\n)" % ord(c), op_index=idx)
     if iml_bareable(val.text, sf.version):
         return val.text
     return quote(val.text)

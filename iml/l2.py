@@ -20,7 +20,12 @@ is E502; any other whitespace outside quotes is E300.
 Canonical print: `[VERB:@TARGET|k=v,k=v]=>[...]`, verbs by canon name, OUT as `[Ω]`, a
 verb reference as `[BATC:READ]`, values bare when the content is a bareword without
 whitespace or `,` `|` `]` `[` `"` `\\` and not starting with `@`, otherwise quoted. No
-whitespace anywhere; a chain read from several source lines prints on one line.
+whitespace anywhere; a chain read from several source lines prints on one line. A value
+that holds a control character other than a newline has no I-Lang spelling: print_L2
+refuses it (E300) instead of writing a text that parse_L2 would refuse.
+
+ends_with_closed_operation is the condition under which the command line joins a
+continuation line to the text above it (SPEC-IML-0.4.md section 2.6).
 """
 
 from .codec import (BATCH_VERB, Chain, Op, Value, RE_NAME, quote, scan_quoted,
@@ -32,7 +37,7 @@ OMEGA = "Ω"                              # the canon alias of OUT (SPEC.md 3.10
 ILANG_RESERVED_IN_BARE = set(',|][ "\\')   # `=`, `>` and `:` are content
 ILANG_E303_IN_BARE = ('[', '"', "\\")        # `,` `|` `]` end the value instead
 CONTINUATION = "=>"                          # the pipe operator; a line starting with it continues a chain
-NOT_AN_ENTITY = "operation target %r is not an @ENTITY (v3.0 \u00a72.2; BATC/Π excepted)"   # the validator's wording
+NOT_AN_ENTITY = "operation target `%s` is not an @ENTITY (v3.0 \u00a72.2; BATC/Π excepted)"   # the validator's wording
 
 
 def ilang_bareable(content):
@@ -44,24 +49,52 @@ def ilang_bareable(content):
     return True
 
 
-def print_value(val):
+def print_value(val, op_index=None):
+    """The I-Lang spelling of one AST value. A control character other than a newline
+    (written as the escape \\n) has no spelling: parse_L2 refuses it raw, inside quotes and
+    outside, and SPEC.md section 2.4 has no escape for it. A hand-built AST that holds
+    one is E300 here, instead of a text the reader would refuse."""
     if val.kind == "entity":
         return "@" + val.text
     if val.kind == "code":
-        raise IMLError("E303", "a value code ~%s has no I-Lang spelling" % val.text)
+        raise IMLError("E303", "a value code ~%s has no I-Lang spelling" % val.text, op_index=op_index)
+    for c in val.text:
+        if c != "\n" and is_control(c):
+            raise IMLError("E300", "control character U+%04X in a value has no spelling "
+                           "(only a newline has an escape, \\n)" % ord(c), op_index=op_index)
     return val.text if ilang_bareable(val.text) else quote(val.text)
+
+
+def ends_with_closed_operation(text):
+    """True when text ends with `]` outside a quoted value, that is when the text so far
+    is closed by an operation and a continuation line may be joined to it. Quotes are
+    scanned by the rules parse_L2 applies (first_whitespace_outside_quotes): a quote opens
+    a value only right after `=`, a backslash inside it escapes the next character, and
+    the next unescaped quote closes it. Nothing is judged here but the end of the text."""
+    quoted = escaped = False
+    for k, c in enumerate(text):
+        if quoted:
+            if escaped:
+                escaped = False
+            elif c == "\\":
+                escaped = True
+            elif c == '"':
+                quoted = False
+        elif c == '"' and k > 0 and text[k - 1] == "=":
+            quoted = True
+    return not quoted and text.endswith("]")
 
 
 def print_L2(chain):
     parts = []
-    for op in chain.ops:
+    for idx, op in enumerate(chain.ops):
         s = OMEGA if op.verb == "OUT" else op.verb
         if op.target is not None:
             s += ":@" + op.target
         elif op.verbref is not None:
             s += ":" + op.verbref
         if op.mods:
-            s += "|" + ",".join(k + "=" + print_value(v) for k, v in op.mods)
+            s += "|" + ",".join(k + "=" + print_value(v, idx) for k, v in op.mods)
         parts.append("[" + s + "]")
     return "=>".join(parts)
 
@@ -123,7 +156,8 @@ def parse_L2(text, registry=None):
                     raise IMLError("E300", NOT_AN_ENTITY % ttext, i, idx)
                 ref = reg.resolve_verb(ttext)
                 if ref is None:
-                    raise IMLError("E304", "BATC verb reference %r is not a registered verb or alias" % ttext, i, idx)
+                    # the validator's wording
+                    raise IMLError("E304", "BATC verb reference `%s` is not a registered verb or alias" % ttext, i, idx)
                 if ref == "OUT":
                     raise IMLError("E502", "OUT cannot be batched: not representable in IML", i, idx)
                 verbref = ref
