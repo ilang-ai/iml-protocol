@@ -75,8 +75,10 @@ def cmd_compile(path, document):
         except IMLError as e:
             report(name, no, e)
             return 1
-    if asts:
-        print(compile_document(asts))
+    if not asts:
+        report(name, 1, IMLError("E300", "no I-Lang line to compile: a document carries at least one chain", 0))
+        return 1
+    print(compile_document(asts))
     return 0
 
 

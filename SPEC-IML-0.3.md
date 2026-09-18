@@ -20,7 +20,7 @@ Notation: the 0.3 marks are `@` (U+0040), `$` (U+0024) and the space (U+0020). T
 
 ### 0.1 Why 0.3
 
-The 0.2 measurement on the 72-chain golden corpus (`measurements/0.2-2026-09-18.md`) put the IML message at 2,761 `cl100k_base` tokens against 2,040 for the I-Lang canonical print. Two causes were measured on the same corpus: the per-message header `#iml/0.2/88d05d0839c1 ` costs 17 tokens on every one of the 72 messages, and `Φ`, `Ω` and `→` are multibyte characters that the two encodings cut into two or three tokens each. 0.3 replaces the three marks by one ASCII character each (`@`, `$`, the space) and lets the header stand once at the head of a document, so that it is paid once per document rather than once per chain. Measured after the change on the same corpus, the same encodings and the same JSON baseline (`measurements/0.3-2026-09-18.md`):
+The 0.2 measurement on the 72-chain golden corpus (`measurements/0.2-2026-09-18.md`) put the IML message at 2,761 `cl100k_base` tokens against 2,040 for the I-Lang canonical print. Two causes were measured on the same corpus: the per-message header `#iml/0.2/88d05d0839c1 ` costs 17 tokens on every one of the 72 messages, and `Φ`, `Ω` and `→` are multibyte characters that each cost about one extra token under `cl100k_base` and about half a token under `o200k_base` (measured over the 308 marks of the corpus: 323 and 169 extra tokens). 0.3 replaces the three marks by one ASCII character each (`@`, `$`, the space) and lets the header stand once at the head of a document, so that it is paid once per document rather than once per chain. Measured after the change on the same corpus, the same encodings and the same JSON baseline (`measurements/0.3-2026-09-18.md`):
 
 | form | bytes | chars | cl100k_base | o200k_base |
 |------|---:|---:|---:|---:|
@@ -166,8 +166,8 @@ Every syntax character of IML 0.3 is ASCII; the content of a value is whatever U
 ### 2.1 Grammar
 
 ```
-document  := header NL chain (NL chain)*             ; the header once, then one chain per line
-message   := header SP chain                          ; the one-line form
+document  := header NL chain (NL chain)* NL?         ; the header once, then one chain per line; one final line terminator accepted
+message   := header SP chain NL?                      ; the one-line form; NL is `\n` or `\r\n`
 header    := "#iml/0.3/" HEX12                        ; HEX12 = 12 lowercase hex chars = registry digest prefix
 NL        := "\n"                                     ; "\r\n" is accepted as NL and printed as "\n"
 SP        := " "                                      ; exactly one space
@@ -184,10 +184,10 @@ value     := quoted | entityref | code | bare
 quoted    := '"' (escape | [^"\\])* '"'               ; escape := "\" ( '"' | "\" | "n" )   (SPEC.md §2.4); no raw control character
 entityref := "@" (MARK | "{" NAME "}")
 code      := "~" [a-z0-9]+                            ; looked up in value_codes[key]; 0.3: always E303
-bare      := [^,"\\ \t\r\n]+  with no control character, and not starting with "~", "@", "$", "\""
+bare      := [^,"\\]+  with no whitespace (any character Python str.isspace() reports, U+00A0 and U+3000 included) and no control character, and not starting with "~", "@", "$", "\""
 ```
 
-A raw control character inside a quoted value, U+0000 to U+001F, U+007F, U+2028 or U+2029, is E300, in IML input and in I-Lang input alike; a newline is written only as the escape `\n`. So no line terminator ever stands inside a value, and a document is split into lines before any value is read (§2.6).
+A raw control character inside a quoted value, U+0000 to U+001F, U+007F, U+0085, U+2028 or U+2029, is E300, in IML input and in I-Lang input alike; a newline is written only as the escape `\n`. So no line terminator ever stands inside a value, and a document is split into lines before any value is read (§2.6).
 
 ### 2.2 Segmentation
 
@@ -352,7 +352,7 @@ The codec fails closed; the first error stops it. Codes reuse §9 of the canon. 
 | E303 | Invalid Value | bare value containing `,` `|` `]` `[` `"` `\` (§5.1); a value starting with `$` (§2.2); `~code` not in the key's table (always, in 0.3) |
 | E502 | Unsupported Format | no header; wrong version, a 0.2 header included; digest mismatch; a second header in a document; declaration or other construct outside the subset; OUT not last; `[Π:VERB]` form; more than one chain on one I-Lang line |
 
-Reading of the table. A raw control character (U+0000 to U+001F, U+007F, U+2028, U+2029) is E300 wherever it appears in a value, bare or quoted; a newline is only ever the escape `\n` inside quotes. In I-Lang input a bare value ends at `,`, `|` or `]`, so of the E303 set only `[`, `"` and `\` can stand inside one; a `|` that follows a value is a stray character, E300 (§0). In IML a bare value ends at `,` or a space, and `"` or `\` inside it is E303, any other whitespace inside it E300 (§2.1). A value that starts with `~` or `@` is not a bare value: it is read as a code or as an entity reference and judged by that rule (E303 for a code outside its table, E200 or E300 for a malformed reference); a value that starts with `"` is a quoted value; a value that starts with `$` is E303. A character that no production admits at its position, outside a value, is a stray character, E300; so is an op that starts with neither `$` nor two characters of `[A-Z0-9]`. Two characters of `[A-Z0-9]` that are not a root in the registry are E304. On the header and the two forms, §3 gives the split between E502 and E300.
+Reading of the table. A raw control character (U+0000 to U+001F, U+007F, U+0085, U+2028, U+2029) is E300 wherever it appears in a value, bare or quoted; a newline is only ever the escape `\n` inside quotes. In I-Lang input a bare value ends at `,`, `|` or `]`, so of the E303 set only `[`, `"` and `\` can stand inside one; a `|` that follows a value is a stray character, E300 (§0). In IML a bare value ends at `,` or a space, and `"` or `\` inside it is E303, any other whitespace inside it E300 (§2.1). A value that starts with `~` or `@` is not a bare value: it is read as a code or as an entity reference and judged by that rule (E303 for a code outside its table, E200 or E300 for a malformed reference); a value that starts with `"` is a quoted value; a value that starts with `$` is E303. A character that no production admits at its position, outside a value, is a stray character, E300; so is an op that starts with neither `$` nor two characters of `[A-Z0-9]`. Two characters of `[A-Z0-9]` that are not a root in the registry are E304. On the header and the two forms, §3 gives the split between E502 and E300.
 
 Error objects carry `code`, `message`, `offset` (0-based character index into the whole input text, a document included) and, for compile, the operation index; inside a document the operation index counts from the start of its line, and a compile error names the chain.
 
@@ -529,8 +529,10 @@ A:SPEC-IML-0.2.md_edited_by_0.3_work⇒the_record_is_no_longer_a_record
 - 0.2.1 (2026-09-18): clarifications; the message form and the registry unchanged.
 - 0.2.2 (2026-09-18): citation metadata; no other change.
 - 0.3.0 (2026-09-18): surface change only. `Φ` to `@`, `Ω` to `$`, `→` to one space; the header `#iml/0.3/`; the document form with one header for many chains; `$` at the start of a value reserved (E303); the 0.2 surface read only behind `--version 0.2`. The registry (digest 88d05d0839c1…), the AST, the value rules, the canonical print, the round-trip law and the six error codes are unchanged; §0.1 records the measurement before and after.
+- 0.3.1 (2026-09-18): U+0085 added to the control characters (the canon validator reads it as a line break); the `bare` production states that whitespace means any Unicode whitespace; the grammar shows the optional final line terminator that §3 already accepted; the per-mark token cost in §0 is the measured figure; the rule sheet names the registered-name-in-custom-form, empty `~` and `$@` cases. No change to the message form, the registry or the error codes.
 
 ::CLAUSE{REVISIONS|conf:confirmed|scope:iml-0.3}
 T:0.3.0=surface_change_only|marks_ascii|header_document_level|dollar_at_value_start_reserved|0.2_surface_read_only
+T:0.3.1=fix_release|NEL_control|bare_unicode_whitespace|grammar_final_NL|token_cost_measured|rule_sheet_gaps|cli_edge_cases
 T:unchanged=registry_digest_88d05d0839c1|AST|value_rules|canonical_print|round_trip_law|error_codes
 A:revision_changes_the_registry_or_the_AST⇒a_new_version_not_a_revision

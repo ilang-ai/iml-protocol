@@ -24,7 +24,7 @@ Scope, and nothing beyond it:
 
 ## 0.3, ASCII surface and document-level header
 
-Released 2026-09-18 as v0.3.0. A change of the surface only, made after the 0.2 measurement (item 13 above): on the 72-chain golden corpus the 0.2 message cost 2,761 cl100k_base tokens against 2,040 for the I-Lang canonical print, because every message paid a 17-token header and because `Φ`, `Ω` and `→` are multibyte marks that tokenize into two or three tokens each.
+Released 2026-09-18 as v0.3.0. A change of the surface only, made after the 0.2 measurement (item 13 above): on the 72-chain golden corpus the 0.2 message cost 2,761 cl100k_base tokens against 2,040 for the I-Lang canonical print, because every message paid a 17-token header and because `Φ`, `Ω` and `→` are multibyte marks that cost about one extra token each under cl100k_base.
 
 Scope, and nothing beyond it:
 
@@ -65,3 +65,4 @@ Serialising OpenAPI schemas; variable-length verb coding; outreach to transport 
 | 2026-09-18 | 0.2.1 released as v0.2.1, a fix release after an adversarial review of a clean clone: `.gitattributes` pins LF so a Windows clone keeps the canon sha256; the I-Lang bare-value character set, the header shape and raw control characters inside quotes are fixed in the codec and stated in the specification; 15 malformed cases added; the measurement regenerated. The message form and the registry are unchanged (digest `88d05d0839c1`). |
 | 2026-09-18 | 0.2.2 released as v0.2.2: citation metadata for the Zenodo archive; no other change. |
 | 2026-09-18 | 0.3.0 released as v0.3.0: ASCII surface (`@`, `$`, one space) and the document form with one header for many chains; `SPEC-IML-0.3.md`, the 0.3 rule sheet, `corpus/golden-0.3/`, 41 malformed cases added, the 0.2 surface read behind `--version 0.2`, measurement before and after. On the golden corpus the 0.3 message is 2,438 cl100k_base tokens (0.2: 2,761; I-Lang print: 2,040) and the 0.3 document 1,315. The registry and its digest are unchanged. |
+| 2026-09-18 | 0.3.1 released as v0.3.1, a fix release after an adversarial review of a clean clone: control-character set, Unicode whitespace in the bare rule, grammar line terminators, measured per-mark token cost, rule-sheet gaps, CLI edge cases. Message form and registry unchanged. |

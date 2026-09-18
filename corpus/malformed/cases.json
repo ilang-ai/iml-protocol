@@ -875,5 +875,18 @@
   "expect": "E302",
   "version": "0.3",
   "label": "unknown key code"
+ },
+ {
+  "input": "[READ:@SRC|path=ab]=>[Ω]",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "U+0085 (NEL) inside a bare I-Lang value"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1 RD@SRpt=\"ab\" $",
+  "direction": "decompile",
+  "expect": "E300",
+  "label": "U+0085 (NEL) inside a quoted 0.3 value",
+  "version": "0.3"
  }
 ]

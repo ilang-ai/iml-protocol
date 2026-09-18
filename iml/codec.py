@@ -169,9 +169,10 @@ def quote(content):
 
 
 def is_control(c):
-    """True for a character that may not appear raw inside a quoted value: U+0000 to
-    U+001F, U+007F, U+2028 and U+2029. A newline is written as the escape \\n."""
-    return c < " " or c == "\x7f" or c == "\u2028" or c == "\u2029"
+    """True for a character that may not appear raw inside a value: U+0000 to U+001F,
+    U+007F, U+0085 (NEL, a line break for the canon validator), U+2028 and U+2029. A
+    newline is written as the escape \\n."""
+    return c < " " or c == "\x7f" or c == "\x85" or c == "\u2028" or c == "\u2029"
 
 
 def scan_quoted(text, i, what="quoted value", end=None):
@@ -366,6 +367,8 @@ def decompile(text, registry=None, version=DEFAULT_VERSION):
             raise IMLError("E300", "text after the message line: a message is one line; a document puts "
                            "the header alone on its first line", nl + 1)
         if i >= line_end:
+            if nl >= 0:
+                raise IMLError("E300", "trailing space after the header: a document header stands alone on its line", i - 1)
             raise IMLError("E300", "empty chain", i)
         return _scan_chain(text, i, line_end, reg, sf)
     if nl < 0:
@@ -385,7 +388,7 @@ def decompile(text, registry=None, version=DEFAULT_VERSION):
             break
         start = nl2 + 1
     if not chains:
-        raise IMLError("E300", "a document carries at least one chain line after the header", length)
+        raise IMLError("E300", "a document carries at least one chain line after the header", nl)
     return chains
 
 

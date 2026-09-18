@@ -17,15 +17,15 @@ Look at the first character of the op.
 - `$`: the verb OUT. It may carry modifiers and must be the last op.
 - Otherwise the first two characters, each `A-Z` or `0-9`, are the verb root. Registry: root to verb name.
 
-Then, if the next character is `@`, a target follows: `@` plus two characters `A-Z` or `0-9` is a registered entity mark (registry: mark to `@NAME`); `@{NAME}` is the custom entity `@NAME`.
+Then, if the next character is `@`, a target follows: `@` plus two characters `A-Z` or `0-9` is a registered entity mark (registry: mark to `@NAME`); `@{NAME}` is the custom entity `@NAME`; a registered name in that form (`@{PREV}`) is E200.
 
 Then modifiers, if any: `kk=value` pairs separated by `,`. A key is exactly two lowercase letters (registry: code to key name). A value runs to the next `,` or space outside quotes, or to the end of the line.
 
 Value kinds, by first character:
 
-- `"`: quoted string, escapes `\"` `\\` `\n`; the content is the unescaped text and may hold spaces and commas. A raw control character (U+0000 to U+001F, U+007F, U+2028, U+2029) inside quotes is E300; a newline is written `\n`.
+- `"`: quoted string, escapes `\"` `\\` `\n`; the content is the unescaped text and may hold spaces and commas. A raw control character (U+0000 to U+001F, U+007F, U+0085, U+2028, U+2029) inside quotes is E300; a newline is written `\n`.
 - `@`: entity reference, same two forms as a target; it becomes `@NAME`.
-- `~`: value code. 0.3 has no codes: report E303.
+- `~`: value code. 0.3 has no codes: report E303; `~` with nothing after it is E300.
 - `$`: reserved at the start of a value: report E303.
 - anything else: bare. Copy the characters exactly (`007` stays `007`, `true` stays `true`). After the first character `$` `@` `~` `=` `>` `#` `{` `}` and `Φ` `Ω` `→` are content.
 
@@ -51,7 +51,7 @@ Report E502 and stop: a `::` declaration, `T[...]`, `PARALLEL{}` or `||`, a cond
 
 Stop at the first error. Report the code and the 0-based character offset (when compiling, also the op index). Never guess a root, key, mark or verb. Never repair, reorder or drop a value.
 
-- E300 syntax: bad header shape (judged before the version and the digest), unterminated quote, bad escape, raw control character in a value, empty value, stray character (a `|` between modifiers, a tab, `Φ` `Ω` `→` in a syntax position), missing `=`, whitespace in a bare value or around a chain, two spaces between ops, a trailing space, a blank line in a document, a header with no chain, a second line after a message line, a dangling `=>`.
+- E300 syntax: bad header shape (judged before the version and the digest), unterminated quote, bad escape, raw control character in a value, empty value, stray character (a `|` between modifiers, a tab, `Φ` `Ω` `→` in a syntax position), missing `=`, whitespace in a bare value or around a chain, two spaces between ops, a trailing space, a blank line in a document, a header with no chain, a second line after a message line, a dangling `=>`, `$@` in IML (OUT takes no target).
 - E304 unknown root or verb (`OT` included).
 - E302 unknown key code or key.
 - E200 unknown mark, or an entity name that fails `[A-Z][A-Z0-9_]*`.
@@ -63,8 +63,6 @@ Stop at the first error. Report the code and the 0-based character offset (when 
 I-Lang: `[READ:@GH|path=readme.md]=>[XLAT|lng=zh]=>[FMT|fmt=md]=>[Ω]`
 
 IML message: `#iml/0.3/88d05d0839c1 RD@GHpt=readme.md XLln=zh FMfm=md $`
-
-Read back: `RD` READ; `@GH` @GH; `pt=readme.md` path, bare; space; `XL` XLAT; `ln=zh` lng; `FM` FMT; `fm=md` fmt; `$` OUT; end of line. Print: the I-Lang line above.
 
 The same chain and `[READ:@MYDATA|src=@PREV,whr="a, b"]=>[Ω|fmt=json]` as one document:
 

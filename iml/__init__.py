@@ -21,7 +21,7 @@ from .errors import CODES, IMLError
 from .l2 import parse_L2, print_L2
 from .registry import Registry, RegistryError, default_registry, load_registry
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 __all__ = [
     "Chain", "Op", "Value", "compile", "compile_document", "decompile", "is_document",
