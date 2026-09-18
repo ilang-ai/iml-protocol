@@ -1,0 +1,1 @@
+[READ:@LOCAL|path=a.txt]=>[θ|lng=en]=>[REWR]=>[FMT|fmt=md]=>[Ω]

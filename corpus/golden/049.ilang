@@ -1,0 +1,1 @@
+[FILT:@SRC|whr=score>0.5,lim=1.0]=>[REDU|op=CNT]=>[Ω]

@@ -1,0 +1,807 @@
+{
+  "aliases": {
+    "Δ": "DIFF",
+    "Π": "BATC",
+    "Σ": "MERGE",
+    "Ω": "OUT",
+    "ζ": "CMPR",
+    "θ": "XLAT",
+    "λ": "MAP",
+    "μ": "STAT",
+    "ξ": "HASH",
+    "φ": "FILT",
+    "ψ": "SENT",
+    "∂": "SPLIT",
+    "∇": "SORT"
+  },
+  "canon": {
+    "commit": "127ba56f4eb1f35c2951d4aec4b7bd22831119ff",
+    "files": {
+      "SPEC-v4.1-MEDIA-PROFILE.md": "0076bbf85c0af52c7a9a10e9ee88ed35f45e793d66fe9ee0cfc63c742f3c50f9",
+      "SPEC.md": "c5607785493460ab90fa345d4f01c80166414e00a0fd930797c7c731428ac2d3",
+      "archive/SPEC-v5.0-PATCH-2.md": "12143a8386e08db4b2460dbe0c608c48be46900d4460d4855905358737628094",
+      "ilang_grammar_validator.py": "3c29df9089401fed742bb6448c6c7dc7b72c811cdd90eca05696d7b6db62f4ad"
+    }
+  },
+  "digest": "88d05d0839c1a2002abdb6f6be3c9846c2990496ce655b738d874217cc78c03f",
+  "entities": [
+    {
+      "mark": "SR",
+      "name": "SRC",
+      "tier": 1
+    },
+    {
+      "mark": "DS",
+      "name": "DST",
+      "tier": 1
+    },
+    {
+      "mark": "PR",
+      "name": "PREV",
+      "tier": 1
+    },
+    {
+      "mark": "LC",
+      "name": "LOCAL",
+      "tier": 1
+    },
+    {
+      "mark": "SC",
+      "name": "SCREEN",
+      "tier": 1
+    },
+    {
+      "mark": "LG",
+      "name": "LOG",
+      "tier": 1
+    },
+    {
+      "mark": "NL",
+      "name": "NULL",
+      "tier": 1
+    },
+    {
+      "mark": "ST",
+      "name": "STDIN",
+      "tier": 1
+    },
+    {
+      "mark": "GH",
+      "name": "GH",
+      "tier": 2
+    },
+    {
+      "mark": "R2",
+      "name": "R2",
+      "tier": 2
+    },
+    {
+      "mark": "CS",
+      "name": "COS",
+      "tier": 2
+    },
+    {
+      "mark": "DR",
+      "name": "DRIVE",
+      "tier": 2
+    },
+    {
+      "mark": "WR",
+      "name": "WORKER",
+      "tier": 2
+    },
+    {
+      "mark": "CF",
+      "name": "CF",
+      "tier": 2
+    },
+    {
+      "mark": "SY",
+      "name": "SYSTEM",
+      "tier": 3
+    },
+    {
+      "mark": "RN",
+      "name": "RUNTIME",
+      "tier": 3
+    },
+    {
+      "mark": "GR",
+      "name": "GRADER",
+      "tier": 3
+    },
+    {
+      "mark": "US",
+      "name": "USER",
+      "tier": 3
+    },
+    {
+      "mark": "SL",
+      "name": "SELF",
+      "tier": 3
+    },
+    {
+      "mark": "AG",
+      "name": "AGENT",
+      "tier": 3
+    },
+    {
+      "mark": "TS",
+      "name": "TASK",
+      "tier": 3
+    },
+    {
+      "mark": "TL",
+      "name": "TOOL",
+      "tier": 3
+    },
+    {
+      "mark": "IM",
+      "name": "IMG",
+      "tier": 4
+    },
+    {
+      "mark": "VD",
+      "name": "VID",
+      "tier": 4
+    },
+    {
+      "mark": "AD",
+      "name": "AUD",
+      "tier": 4
+    }
+  ],
+  "iml_version": "0.2",
+  "keys": [
+    {
+      "code": "sr",
+      "name": "src",
+      "tier": "core"
+    },
+    {
+      "code": "ds",
+      "name": "dst",
+      "tier": "core"
+    },
+    {
+      "code": "pt",
+      "name": "path",
+      "tier": "core"
+    },
+    {
+      "code": "fm",
+      "name": "fmt",
+      "tier": "core"
+    },
+    {
+      "code": "ln",
+      "name": "lng",
+      "tier": "core"
+    },
+    {
+      "code": "st",
+      "name": "sty",
+      "tier": "core"
+    },
+    {
+      "code": "tn",
+      "name": "ton",
+      "tier": "core"
+    },
+    {
+      "code": "le",
+      "name": "len",
+      "tier": "core"
+    },
+    {
+      "code": "lm",
+      "name": "lim",
+      "tier": "core"
+    },
+    {
+      "code": "of",
+      "name": "off",
+      "tier": "core"
+    },
+    {
+      "code": "tp",
+      "name": "top",
+      "tier": "core"
+    },
+    {
+      "code": "bt",
+      "name": "bot",
+      "tier": "core"
+    },
+    {
+      "code": "sa",
+      "name": "srt",
+      "tier": "core"
+    },
+    {
+      "code": "gr",
+      "name": "grp",
+      "tier": "core"
+    },
+    {
+      "code": "wh",
+      "name": "whr",
+      "tier": "core"
+    },
+    {
+      "code": "mc",
+      "name": "mch",
+      "tier": "core"
+    },
+    {
+      "code": "ex",
+      "name": "exc",
+      "tier": "core"
+    },
+    {
+      "code": "dp",
+      "name": "dep",
+      "tier": "core"
+    },
+    {
+      "code": "rn",
+      "name": "rng",
+      "tier": "core"
+    },
+    {
+      "code": "ty",
+      "name": "typ",
+      "tier": "core"
+    },
+    {
+      "code": "en",
+      "name": "enc",
+      "tier": "core"
+    },
+    {
+      "code": "cp",
+      "name": "cap",
+      "tier": "core"
+    },
+    {
+      "code": "pr",
+      "name": "pri",
+      "tier": "core"
+    },
+    {
+      "code": "cl",
+      "name": "col",
+      "tier": "core"
+    },
+    {
+      "code": "rw",
+      "name": "row",
+      "tier": "core"
+    },
+    {
+      "code": "fr",
+      "name": "frm",
+      "tier": "core"
+    },
+    {
+      "code": "to",
+      "name": "to",
+      "tier": "core"
+    },
+    {
+      "code": "sc",
+      "name": "scp",
+      "tier": "core"
+    },
+    {
+      "code": "op",
+      "name": "op",
+      "tier": "core"
+    },
+    {
+      "code": "sb",
+      "name": "sbj",
+      "tier": "media"
+    },
+    {
+      "code": "ac",
+      "name": "act",
+      "tier": "media"
+    },
+    {
+      "code": "pl",
+      "name": "plc",
+      "tier": "media"
+    },
+    {
+      "code": "tx",
+      "name": "txt",
+      "tier": "media"
+    },
+    {
+      "code": "pv",
+      "name": "pov",
+      "tier": "media"
+    },
+    {
+      "code": "fc",
+      "name": "fcl",
+      "tier": "media"
+    },
+    {
+      "code": "mv",
+      "name": "mvt",
+      "tier": "media"
+    },
+    {
+      "code": "lg",
+      "name": "lgt",
+      "tier": "media"
+    },
+    {
+      "code": "pa",
+      "name": "pal",
+      "tier": "media"
+    },
+    {
+      "code": "md",
+      "name": "mdm",
+      "tier": "media"
+    },
+    {
+      "code": "as",
+      "name": "asp",
+      "tier": "media"
+    },
+    {
+      "code": "rs",
+      "name": "rsl",
+      "tier": "media"
+    },
+    {
+      "code": "ql",
+      "name": "qly",
+      "tier": "media"
+    },
+    {
+      "code": "dr",
+      "name": "dur",
+      "tier": "media"
+    },
+    {
+      "code": "fp",
+      "name": "fps",
+      "tier": "media"
+    },
+    {
+      "code": "sd",
+      "name": "sed",
+      "tier": "media"
+    },
+    {
+      "code": "ad",
+      "name": "adh",
+      "tier": "media"
+    },
+    {
+      "code": "rf",
+      "name": "ref",
+      "tier": "media"
+    },
+    {
+      "code": "dl",
+      "name": "dlg",
+      "tier": "media"
+    },
+    {
+      "code": "sf",
+      "name": "sfx",
+      "tier": "media"
+    }
+  ],
+  "value_codes": {
+    "act": {},
+    "adh": {},
+    "asp": {},
+    "bot": {},
+    "cap": {},
+    "col": {},
+    "dep": {},
+    "dlg": {},
+    "dst": {},
+    "dur": {},
+    "enc": {},
+    "exc": {},
+    "fcl": {},
+    "fmt": {},
+    "fps": {},
+    "frm": {},
+    "grp": {},
+    "len": {},
+    "lgt": {},
+    "lim": {},
+    "lng": {},
+    "mch": {},
+    "mdm": {},
+    "mvt": {},
+    "off": {},
+    "op": {},
+    "pal": {},
+    "path": {},
+    "plc": {},
+    "pov": {},
+    "pri": {},
+    "qly": {},
+    "ref": {},
+    "rng": {},
+    "row": {},
+    "rsl": {},
+    "sbj": {},
+    "scp": {},
+    "sed": {},
+    "sfx": {},
+    "src": {},
+    "srt": {},
+    "sty": {},
+    "to": {},
+    "ton": {},
+    "top": {},
+    "txt": {},
+    "typ": {},
+    "whr": {}
+  },
+  "verbs": [
+    {
+      "name": "READ",
+      "root": "RD"
+    },
+    {
+      "name": "WRIT",
+      "root": "WR"
+    },
+    {
+      "name": "GET",
+      "root": "GT"
+    },
+    {
+      "name": "DEL",
+      "root": "DL"
+    },
+    {
+      "name": "LIST",
+      "root": "LS"
+    },
+    {
+      "name": "COPY",
+      "root": "CP"
+    },
+    {
+      "name": "MOVE",
+      "root": "MV"
+    },
+    {
+      "name": "STRM",
+      "root": "ST"
+    },
+    {
+      "name": "CACH",
+      "root": "CC"
+    },
+    {
+      "name": "SYNC",
+      "root": "SY"
+    },
+    {
+      "name": "SEND",
+      "root": "SN"
+    },
+    {
+      "name": "RUN",
+      "root": "RN"
+    },
+    {
+      "name": "FMT",
+      "root": "FM"
+    },
+    {
+      "name": "CONV",
+      "root": "CN"
+    },
+    {
+      "name": "SPLIT",
+      "root": "SP"
+    },
+    {
+      "name": "MERGE",
+      "root": "MR"
+    },
+    {
+      "name": "MAP",
+      "root": "MP"
+    },
+    {
+      "name": "FILT",
+      "root": "FL"
+    },
+    {
+      "name": "SORT",
+      "root": "SR"
+    },
+    {
+      "name": "DEDU",
+      "root": "DD"
+    },
+    {
+      "name": "FLAT",
+      "root": "FT"
+    },
+    {
+      "name": "NEST",
+      "root": "NS"
+    },
+    {
+      "name": "CHNK",
+      "root": "CH"
+    },
+    {
+      "name": "REDU",
+      "root": "RE"
+    },
+    {
+      "name": "PIVT",
+      "root": "PV"
+    },
+    {
+      "name": "TRNS",
+      "root": "TR"
+    },
+    {
+      "name": "ENCD",
+      "root": "EN"
+    },
+    {
+      "name": "DECD",
+      "root": "DC"
+    },
+    {
+      "name": "HASH",
+      "root": "HS"
+    },
+    {
+      "name": "CMPR",
+      "root": "CM"
+    },
+    {
+      "name": "EXPN",
+      "root": "EX"
+    },
+    {
+      "name": "XLAT",
+      "root": "XL"
+    },
+    {
+      "name": "REWR",
+      "root": "RW"
+    },
+    {
+      "name": "DIFF",
+      "root": "DF"
+    },
+    {
+      "name": "SCAN",
+      "root": "SC"
+    },
+    {
+      "name": "MTCH",
+      "root": "MT"
+    },
+    {
+      "name": "CNT",
+      "root": "CT"
+    },
+    {
+      "name": "STAT",
+      "root": "SA"
+    },
+    {
+      "name": "EVAL",
+      "root": "EV"
+    },
+    {
+      "name": "SCOR",
+      "root": "SO"
+    },
+    {
+      "name": "RANK",
+      "root": "RK"
+    },
+    {
+      "name": "TRND",
+      "root": "TN"
+    },
+    {
+      "name": "CORR",
+      "root": "CR"
+    },
+    {
+      "name": "FRCS",
+      "root": "FR"
+    },
+    {
+      "name": "ANOM",
+      "root": "AN"
+    },
+    {
+      "name": "SENT",
+      "root": "SE"
+    },
+    {
+      "name": "CLST",
+      "root": "CL"
+    },
+    {
+      "name": "BNCH",
+      "root": "BN"
+    },
+    {
+      "name": "AUDT",
+      "root": "AD"
+    },
+    {
+      "name": "VALD",
+      "root": "VL"
+    },
+    {
+      "name": "CLSF",
+      "root": "CS"
+    },
+    {
+      "name": "CREA",
+      "root": "CE"
+    },
+    {
+      "name": "DRFT",
+      "root": "DR"
+    },
+    {
+      "name": "EXPD",
+      "root": "EP"
+    },
+    {
+      "name": "SHRT",
+      "root": "SH"
+    },
+    {
+      "name": "PARA",
+      "root": "PR"
+    },
+    {
+      "name": "STYL",
+      "root": "SL"
+    },
+    {
+      "name": "TMPL",
+      "root": "TM"
+    },
+    {
+      "name": "FILL",
+      "root": "FI"
+    },
+    {
+      "name": "EXTC",
+      "root": "ET"
+    },
+    {
+      "name": "GEN",
+      "root": "GN"
+    },
+    {
+      "name": "PLAN",
+      "root": "PL"
+    },
+    {
+      "name": "DECI",
+      "root": "DE"
+    },
+    {
+      "name": "CHEK",
+      "root": "CK"
+    },
+    {
+      "name": "FIX",
+      "root": "FX"
+    },
+    {
+      "name": "DPLO",
+      "root": "DP"
+    },
+    {
+      "name": "SAVE",
+      "root": "SV"
+    },
+    {
+      "name": "REVW",
+      "root": "RV"
+    },
+    {
+      "name": "LERN",
+      "root": "LR"
+    },
+    {
+      "name": "TEST",
+      "root": "TS"
+    },
+    {
+      "name": "PARS",
+      "root": "PS"
+    },
+    {
+      "name": "LOOP",
+      "root": "LP"
+    },
+    {
+      "name": "WAIT",
+      "root": "WT"
+    },
+    {
+      "name": "OUT",
+      "root": null
+    },
+    {
+      "name": "DISP",
+      "root": "DS"
+    },
+    {
+      "name": "EXPT",
+      "root": "EA"
+    },
+    {
+      "name": "PRNT",
+      "root": "PN"
+    },
+    {
+      "name": "LOG",
+      "root": "LG"
+    },
+    {
+      "name": "LINK",
+      "root": "LN"
+    },
+    {
+      "name": "SET",
+      "root": "SB"
+    },
+    {
+      "name": "TAG",
+      "root": "TG"
+    },
+    {
+      "name": "GRP",
+      "root": "GR"
+    },
+    {
+      "name": "EMBD",
+      "root": "EM"
+    },
+    {
+      "name": "HELP",
+      "root": "HL"
+    },
+    {
+      "name": "DESC",
+      "root": "DA"
+    },
+    {
+      "name": "INTR",
+      "root": "IN"
+    },
+    {
+      "name": "NOOP",
+      "root": "NP"
+    },
+    {
+      "name": "BATC",
+      "root": "BT"
+    }
+  ]
+}

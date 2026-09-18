@@ -1,0 +1,1 @@
+[SYNC:@GH|src=@LOCAL,dst=@GH,path=docs/]=>[SEND:@USER|fmt=text]

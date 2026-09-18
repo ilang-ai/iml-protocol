@@ -1,0 +1,1 @@
+[READ:@LOCAL|path=big.log]=>[ζ|fmt=gzip]=>[WRIT:@R2|path=big.log.gz]

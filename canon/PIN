@@ -1,0 +1,6 @@
+upstream https://github.com/ilang-ai/ilang-spec
+commit 127ba56f4eb1f35c2951d4aec4b7bd22831119ff
+c5607785493460ab90fa345d4f01c80166414e00a0fd930797c7c731428ac2d3  SPEC.md
+0076bbf85c0af52c7a9a10e9ee88ed35f45e793d66fe9ee0cfc63c742f3c50f9  SPEC-v4.1-MEDIA-PROFILE.md
+12143a8386e08db4b2460dbe0c608c48be46900d4460d4855905358737628094  archive/SPEC-v5.0-PATCH-2.md
+3c29df9089401fed742bb6448c6c7dc7b72c811cdd90eca05696d7b6db62f4ad  ilang_grammar_validator.py

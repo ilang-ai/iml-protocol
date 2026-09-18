@@ -1,0 +1,1 @@
+[LERN:@SELF|src=@PREV]=>[LOOP|lim=3]=>[WAIT|whr=status:ready]=>[Ω]

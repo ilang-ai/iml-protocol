@@ -1,0 +1,1 @@
+[RUN:@RUNTIME|src="npm run build"]=>[Ω]

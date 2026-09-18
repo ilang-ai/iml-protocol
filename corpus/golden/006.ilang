@@ -1,0 +1,1 @@
+[READ:@SRC]=>[SPLIT|mch="\n"]=>[FILT|exc=^#]=>[SORT]=>[MERGE]=>[Ω]

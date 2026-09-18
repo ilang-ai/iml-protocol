@@ -1,0 +1,1 @@
+[COPY:@DRIVE|src=@LOCAL,path=reports/2026.pdf]=>[MOVE:@COS|dst=@COS,path=archive/]=>[Ω]

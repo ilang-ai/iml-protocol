@@ -1,0 +1,1 @@
+[GET:@CF|path=/zones,lim=50,off=100]=>[PARS|typ=json]=>[Ω|fmt=json]

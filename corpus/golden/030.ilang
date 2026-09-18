@@ -1,0 +1,1 @@
+[TMPL:@SRC|path=tpl/report.md]=>[FILL|src=@PREV]=>[Ω]

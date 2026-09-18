@@ -1,0 +1,1 @@
+[READ:@SRC|fmt=csv]=>[PIVT|col=month,row=product]=>[TRNS]=>[Ω|fmt=csv]

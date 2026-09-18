@@ -1,0 +1,1 @@
+[DEL:@R2|path=tmp/,mch=*.bak,exc=keep.bak]=>[LOG:@LOG|len=short]

@@ -1,0 +1,1 @@
+[DECI:@USER|whr="a > b",pri=p0]=>[FIX|scp=local]=>[SAVE:@LOCAL|path=state.json]=>[Ω]

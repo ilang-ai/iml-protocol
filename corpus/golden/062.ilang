@@ -1,0 +1,1 @@
+[GET:@CF|path=/logs]=>[PARS|typ=json]=>[φ|whr=lvl:error]=>[∇|srt=ts]=>[λ|op=SHRT]=>[Σ]=>[Ω]

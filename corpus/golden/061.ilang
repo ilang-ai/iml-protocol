@@ -1,0 +1,1 @@
+[READ:@GH|path=src/]=>[FILT|mch=*.py]=>[MAP|op=READ]=>[MERGE]=>[SCAN|typ=lint]=>[FMT|fmt=md]=>[WRIT:@LOCAL|path=report.md]=>[Ω]
