@@ -29,7 +29,7 @@ RE_ROOT = re.compile(r"[A-Z0-9]{2}")
 RE_MARK = re.compile(r"[A-Z0-9]{2}")
 RE_KEYCODE = re.compile(r"[a-z]{2}")
 RE_CODE = re.compile(r"[a-z0-9]+")
-RE_HEADER = re.compile(r"#iml/([0-9]+\.[0-9]+)/")
+RE_HEADER = re.compile(r"^#iml/([0-9]+\.[0-9]+)/([0-9a-f]{12}) ")
 
 VALUE_KINDS = ("bare", "quoted", "entity", "code")
 
@@ -119,10 +119,17 @@ def quote(content):
     return '"' + content.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n") + '"'
 
 
+def is_control(c):
+    """True for a character that may not appear raw inside a quoted value: U+0000 to
+    U+001F, U+007F, U+2028 and U+2029. A newline is written as the escape \\n."""
+    return c < " " or c == "\x7f" or c == "\u2028" or c == "\u2029"
+
+
 def scan_quoted(text, i, what="quoted value"):
     """Read a quoted value starting at text[i] == '"'. Return (content, index after the
     closing quote). Escapes: \\" \\\\ \\n. Anything else after a backslash is E300; a raw
-    newline is E300 (a message is one line); a missing closing quote is E300."""
+    control character (is_control) is E300, so a newline is only ever the escape \\n;
+    a missing closing quote is E300."""
     n = len(text)
     buf = []
     j = i + 1
@@ -144,8 +151,8 @@ def scan_quoted(text, i, what="quoted value"):
             continue
         if c == '"':
             return "".join(buf), j + 1
-        if c == "\n":
-            raise IMLError("E300", "raw newline inside %s" % what, j)
+        if is_control(c):
+            raise IMLError("E300", "raw control character U+%04X inside %s (a newline is written \\n)" % (ord(c), what), j)
         buf.append(c)
         j += 1
     raise IMLError("E300", "unterminated %s" % what, i)
@@ -164,8 +171,8 @@ def check_no_whitespace(text, start=0):
                 escaped = True
             elif c == '"':
                 quoted = False
-            elif c == "\n":
-                raise IMLError("E300", "raw newline inside quoted value", k)
+            elif is_control(c):
+                raise IMLError("E300", "raw control character U+%04X inside quoted value" % ord(c), k)
             continue
         if c == '"' and k > 0 and text[k - 1] == "=":
             quoted = True
@@ -180,7 +187,7 @@ def iml_bareable(content):
     if not content or content[0] in ('~', PHI, '"'):
         return False
     for c in content:
-        if c in (",", ARROW, '"', "\\") or c.isspace():
+        if c in (",", ARROW, '"', "\\") or c.isspace() or is_control(c):
             return False
     return True
 
@@ -245,25 +252,22 @@ def _compile_value(val, key, reg, idx):
 
 # -------------------------------------------------------------------- decompile
 def decompile(text, registry=None):
-    """IML message text -> AST. Refuses a message without a header, with another
-    version, or with a digest prefix that is not the loaded registry's (E502)."""
+    """IML message text -> AST. The header is read in this order: no `#iml/` prefix is
+    E502 (no header); a prefix that RE_HEADER does not match (version without a dot,
+    upper-case hex, wrong hex length, missing space) is E300 (bad shape); a matched
+    header with another version, or with a digest prefix that is not the loaded
+    registry's, is E502."""
     reg = registry or default_registry()
     if not isinstance(text, str) or not text.startswith("#iml/"):
         raise IMLError("E502", "no IML header (`#iml/0.2/<12 hex>` expected)", 0)
     m = RE_HEADER.match(text)
     if not m:
-        raise IMLError("E300", "bad header shape", len("#iml/"))
+        raise IMLError("E300", "bad header shape: `#iml/<digits>.<digits>/<12 lowercase hex>` and one space expected", len("#iml/"))
     if m.group(1) != reg.version:
         raise IMLError("E502", "unsupported IML version %s (this codec reads %s)" % (m.group(1), reg.version), len("#iml/"))
-    p = m.end()
-    hex12 = text[p:p + 12]
-    if not re.fullmatch(r"[0-9a-f]{12}", hex12):
-        raise IMLError("E300", "bad header shape: 12 lowercase hex characters expected", p)
-    if text[p + 12:p + 13] != " ":
-        raise IMLError("E300", "bad header shape: one space expected after the header", p + 12)
-    if hex12 != reg.digest[:12]:
-        raise IMLError("E502", "registry digest mismatch: message %s, registry %s" % (hex12, reg.digest[:12]), p)
-    i = p + 13
+    if m.group(2) != reg.digest[:12]:
+        raise IMLError("E502", "registry digest mismatch: message %s, registry %s" % (m.group(2), reg.digest[:12]), m.start(2))
+    i = m.end()
     check_no_whitespace(text, i)
     n = len(text)
     if i >= n:
@@ -328,6 +332,8 @@ def decompile(text, registry=None):
                         j += 1
                     raw = text[i:j]
                     for k, ch in enumerate(raw):
+                        if is_control(ch):
+                            raise IMLError("E300", "raw control character U+%04X in bare value" % ord(ch), i + k, idx)
                         if ch in ('"', "\\"):
                             raise IMLError("E303", "reserved character `%s` in bare value" % ch, i + k, idx)
                     val = Value("bare", raw)

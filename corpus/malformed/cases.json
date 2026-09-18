@@ -1,78 +1,548 @@
 [
-  {"input": "[REED]", "direction": "compile", "expect": "E304", "label": "unknown verb"},
-  {"input": "[OT]", "direction": "compile", "expect": "E304", "label": "OT is not a verb"},
-  {"input": "[read]", "direction": "compile", "expect": "E304", "label": "lower-case verb"},
-  {"input": "[Π:READ]", "direction": "compile", "expect": "E502", "label": "verb in the target slot (alias)"},
-  {"input": "[BATC:READ]", "direction": "compile", "expect": "E502", "label": "verb in the target slot"},
-  {"input": "::STATE{@X, role:x}", "direction": "compile", "expect": "E502", "label": "declaration"},
-  {"input": "T[0] [READ]", "direction": "compile", "expect": "E502", "label": "temporal prefix"},
-  {"input": "PARALLEL{[READ],[FMT]}", "direction": "compile", "expect": "E502", "label": "parallel group"},
-  {"input": "=>[READ]", "direction": "compile", "expect": "E502", "label": "chain starts with the pipe operator"},
-  {"input": "#iml/0.2/88d05d0839c1 RD", "direction": "compile", "expect": "E502", "label": "IML given to the compiler"},
-  {"input": "[READ]=>[Ω]=>[FMT]", "direction": "compile", "expect": "E502", "label": "OUT not last"},
-  {"input": "[READ][FMT]", "direction": "compile", "expect": "E502", "label": "two chains without a pipe"},
-  {"input": "[READ]=>[Ω]#comment", "direction": "compile", "expect": "E502", "label": "text after the chain"},
-  {"input": "[OUT:@SCREEN]", "direction": "compile", "expect": "E502", "label": "OUT with a target"},
-  {"input": "[READ] [FMT]", "direction": "compile", "expect": "E300", "label": "whitespace outside quotes"},
-  {"input": "[READ|path]", "direction": "compile", "expect": "E300", "label": "modifier without ="},
-  {"input": "[READ|path=]", "direction": "compile", "expect": "E300", "label": "empty value"},
-  {"input": "[READ|path=\"a]", "direction": "compile", "expect": "E300", "label": "unterminated quote"},
-  {"input": "[READ|path=\"a\\q\"]", "direction": "compile", "expect": "E300", "label": "bad escape"},
-  {"input": "[READ|path=\"a\"b]", "direction": "compile", "expect": "E300", "label": "stray character after a quoted value"},
-  {"input": "[READ|fmt=json|len=short]", "direction": "compile", "expect": "E300", "label": "pipe-separated modifiers"},
-  {"input": "[READ:]", "direction": "compile", "expect": "E300", "label": "empty target"},
-  {"input": "[READ:x]", "direction": "compile", "expect": "E300", "label": "bareword target"},
-  {"input": "[READ", "direction": "compile", "expect": "E300", "label": "unterminated operation"},
-  {"input": "[READ]=>", "direction": "compile", "expect": "E300", "label": "trailing pipe operator"},
-  {"input": "[]", "direction": "compile", "expect": "E300", "label": "empty operation"},
-  {"input": "[READ|=x]", "direction": "compile", "expect": "E300", "label": "empty modifier key"},
-  {"input": "[READ|path=a,]", "direction": "compile", "expect": "E300", "label": "trailing comma"},
-  {"input": "", "direction": "compile", "expect": "E300", "label": "empty input"},
-  {"input": "[READ|pth=x]", "direction": "compile", "expect": "E302", "label": "unknown key"},
-  {"input": "[READ|sbjx=1]", "direction": "compile", "expect": "E302", "label": "unknown key near a profile key"},
-  {"input": "[READ|bnd=0.1]", "direction": "compile", "expect": "E302", "label": "region body key as a modifier"},
-  {"input": "[READ:@gh]", "direction": "compile", "expect": "E200", "label": "lower-case entity"},
-  {"input": "[READ:@]", "direction": "compile", "expect": "E200", "label": "empty entity name"},
-  {"input": "[READ|src=@bad_name]", "direction": "compile", "expect": "E200", "label": "lower-case entity in value position"},
-  {"input": "[READ:@1ST]", "direction": "compile", "expect": "E200", "label": "entity name starting with a digit"},
-  {"input": "[READ|path=a\"b]", "direction": "compile", "expect": "E303", "label": "quote inside a bare value"},
-  {"input": "[READ|path=a\\b]", "direction": "compile", "expect": "E303", "label": "backslash inside a bare value"},
-  {"input": "[READ|path=a b]", "direction": "compile", "expect": "E300", "label": "space inside a bare value"},
-  {"input": "RDΦGH", "direction": "decompile", "expect": "E502", "label": "no header"},
-  {"input": "#iml/0.1/88d05d0839c1 RD", "direction": "decompile", "expect": "E502", "label": "wrong version"},
-  {"input": "#iml/0.2/000000000000 RD", "direction": "decompile", "expect": "E502", "label": "digest mismatch"},
-  {"input": "#iml/0.2/88d05d0839c1RD", "direction": "decompile", "expect": "E300", "label": "no space after the header"},
-  {"input": "#iml/0.2/88D05D0839C1 RD", "direction": "decompile", "expect": "E300", "label": "upper-case hex in the header"},
-  {"input": "#iml/0.2/88d05d0839 RD", "direction": "decompile", "expect": "E300", "label": "short digest prefix"},
-  {"input": "#iml/0.2/88d05d0839c1 ", "direction": "decompile", "expect": "E300", "label": "empty chain"},
-  {"input": "#iml/0.2/88d05d0839c1 OT", "direction": "decompile", "expect": "E304", "label": "OT is not a root"},
-  {"input": "#iml/0.2/88d05d0839c1 ZZ", "direction": "decompile", "expect": "E304", "label": "unknown root"},
-  {"input": "#iml/0.2/88d05d0839c1 RDpt=x→OT", "direction": "decompile", "expect": "E304", "label": "OT after an arrow"},
-  {"input": "#iml/0.2/88d05d0839c1 rd", "direction": "decompile", "expect": "E300", "label": "lower-case root"},
-  {"input": "#iml/0.2/88d05d0839c1 RDΦZZ", "direction": "decompile", "expect": "E200", "label": "unknown mark"},
-  {"input": "#iml/0.2/88d05d0839c1 RDΦ{bad}", "direction": "decompile", "expect": "E200", "label": "custom entity name in lower case"},
-  {"input": "#iml/0.2/88d05d0839c1 RDΦ{PREV}", "direction": "decompile", "expect": "E200", "label": "registered entity written as custom"},
-  {"input": "#iml/0.2/88d05d0839c1 RDsr=Φ{}", "direction": "decompile", "expect": "E200", "label": "empty custom entity name in value position"},
-  {"input": "#iml/0.2/88d05d0839c1 RDzz=x", "direction": "decompile", "expect": "E302", "label": "unknown key code"},
-  {"input": "#iml/0.2/88d05d0839c1 RDpt", "direction": "decompile", "expect": "E300", "label": "key code without ="},
-  {"input": "#iml/0.2/88d05d0839c1 RDpt=", "direction": "decompile", "expect": "E300", "label": "empty value"},
-  {"input": "#iml/0.2/88d05d0839c1 RDpt=~x", "direction": "decompile", "expect": "E303", "label": "value code not in the (empty) table"},
-  {"input": "#iml/0.2/88d05d0839c1 RDpt=~", "direction": "decompile", "expect": "E300", "label": "empty value code"},
-  {"input": "#iml/0.2/88d05d0839c1 RDpt=\"a", "direction": "decompile", "expect": "E300", "label": "unterminated quote"},
-  {"input": "#iml/0.2/88d05d0839c1 RDpt=\"a\\q\"", "direction": "decompile", "expect": "E300", "label": "bad escape"},
-  {"input": "#iml/0.2/88d05d0839c1 RDpt=\"a\"b", "direction": "decompile", "expect": "E300", "label": "stray character after a quoted value"},
-  {"input": "#iml/0.2/88d05d0839c1 RDpt=a\"b", "direction": "decompile", "expect": "E303", "label": "quote inside a bare value"},
-  {"input": "#iml/0.2/88d05d0839c1 RDpt=a\\b", "direction": "decompile", "expect": "E303", "label": "backslash inside a bare value"},
-  {"input": "#iml/0.2/88d05d0839c1 RD pt=a", "direction": "decompile", "expect": "E300", "label": "whitespace inside the chain"},
-  {"input": "#iml/0.2/88d05d0839c1 Ω→RD", "direction": "decompile", "expect": "E502", "label": "Ω not last"},
-  {"input": "#iml/0.2/88d05d0839c1 ΩΦGH", "direction": "decompile", "expect": "E300", "label": "Ω with a target"},
-  {"input": "#iml/0.2/88d05d0839c1 RD→", "direction": "decompile", "expect": "E300", "label": "trailing arrow"},
-  {"input": "#iml/0.2/88d05d0839c1 →RD", "direction": "decompile", "expect": "E300", "label": "leading arrow"},
-  {"input": "#iml/0.2/88d05d0839c1 RDpt=a,", "direction": "decompile", "expect": "E300", "label": "trailing comma"},
-  {"input": "#iml/0.2/88d05d0839c1 RDpt=a,,", "direction": "decompile", "expect": "E300", "label": "double comma"},
-  {"input": "#iml/0.2/88d05d0839c1 RDΦGHPT=a", "direction": "decompile", "expect": "E300", "label": "upper-case key code"},
-  {"input": "#iml/0.2/88d05d0839c1 RDsr=ΦG", "direction": "decompile", "expect": "E300", "label": "one-character mark"},
-  {"input": "#iml/0.2/88d05d0839c1 RDΦ{GH", "direction": "decompile", "expect": "E300", "label": "unterminated custom entity"},
-  {"input": "#iml/0.2/88d05d0839c1 RD=>FM", "direction": "decompile", "expect": "E300", "label": "I-Lang pipe operator inside IML"},
-  {"input": "#iml/0.2/88d05d0839c1 RD\n", "direction": "decompile", "expect": "E300", "label": "newline inside the message"}
+ {
+  "input": "[REED]",
+  "direction": "compile",
+  "expect": "E304",
+  "label": "unknown verb"
+ },
+ {
+  "input": "[OT]",
+  "direction": "compile",
+  "expect": "E304",
+  "label": "OT is not a verb"
+ },
+ {
+  "input": "[read]",
+  "direction": "compile",
+  "expect": "E304",
+  "label": "lower-case verb"
+ },
+ {
+  "input": "[Π:READ]",
+  "direction": "compile",
+  "expect": "E502",
+  "label": "verb in the target slot (alias)"
+ },
+ {
+  "input": "[BATC:READ]",
+  "direction": "compile",
+  "expect": "E502",
+  "label": "verb in the target slot"
+ },
+ {
+  "input": "::STATE{@X, role:x}",
+  "direction": "compile",
+  "expect": "E502",
+  "label": "declaration"
+ },
+ {
+  "input": "T[0] [READ]",
+  "direction": "compile",
+  "expect": "E502",
+  "label": "temporal prefix"
+ },
+ {
+  "input": "PARALLEL{[READ],[FMT]}",
+  "direction": "compile",
+  "expect": "E502",
+  "label": "parallel group"
+ },
+ {
+  "input": "=>[READ]",
+  "direction": "compile",
+  "expect": "E502",
+  "label": "chain starts with the pipe operator"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 RD",
+  "direction": "compile",
+  "expect": "E502",
+  "label": "IML given to the compiler"
+ },
+ {
+  "input": "[READ]=>[Ω]=>[FMT]",
+  "direction": "compile",
+  "expect": "E502",
+  "label": "OUT not last"
+ },
+ {
+  "input": "[READ][FMT]",
+  "direction": "compile",
+  "expect": "E502",
+  "label": "two chains without a pipe"
+ },
+ {
+  "input": "[READ]=>[Ω]#comment",
+  "direction": "compile",
+  "expect": "E502",
+  "label": "text after the chain"
+ },
+ {
+  "input": "[OUT:@SCREEN]",
+  "direction": "compile",
+  "expect": "E502",
+  "label": "OUT with a target"
+ },
+ {
+  "input": "[READ] [FMT]",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "whitespace outside quotes"
+ },
+ {
+  "input": "[READ|path]",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "modifier without ="
+ },
+ {
+  "input": "[READ|path=]",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "empty value"
+ },
+ {
+  "input": "[READ|path=\"a]",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "unterminated quote"
+ },
+ {
+  "input": "[READ|path=\"a\\q\"]",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "bad escape"
+ },
+ {
+  "input": "[READ|path=\"a\"b]",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "stray character after a quoted value"
+ },
+ {
+  "input": "[READ|fmt=json|len=short]",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "pipe-separated modifiers"
+ },
+ {
+  "input": "[READ:]",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "empty target"
+ },
+ {
+  "input": "[READ:x]",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "bareword target"
+ },
+ {
+  "input": "[READ",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "unterminated operation"
+ },
+ {
+  "input": "[READ]=>",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "trailing pipe operator"
+ },
+ {
+  "input": "[]",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "empty operation"
+ },
+ {
+  "input": "[READ|=x]",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "empty modifier key"
+ },
+ {
+  "input": "[READ|path=a,]",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "trailing comma"
+ },
+ {
+  "input": "",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "empty input"
+ },
+ {
+  "input": "[READ|pth=x]",
+  "direction": "compile",
+  "expect": "E302",
+  "label": "unknown key"
+ },
+ {
+  "input": "[READ|sbjx=1]",
+  "direction": "compile",
+  "expect": "E302",
+  "label": "unknown key near a profile key"
+ },
+ {
+  "input": "[READ|bnd=0.1]",
+  "direction": "compile",
+  "expect": "E302",
+  "label": "region body key as a modifier"
+ },
+ {
+  "input": "[READ:@gh]",
+  "direction": "compile",
+  "expect": "E200",
+  "label": "lower-case entity"
+ },
+ {
+  "input": "[READ:@]",
+  "direction": "compile",
+  "expect": "E200",
+  "label": "empty entity name"
+ },
+ {
+  "input": "[READ|src=@bad_name]",
+  "direction": "compile",
+  "expect": "E200",
+  "label": "lower-case entity in value position"
+ },
+ {
+  "input": "[READ:@1ST]",
+  "direction": "compile",
+  "expect": "E200",
+  "label": "entity name starting with a digit"
+ },
+ {
+  "input": "[READ|path=a\"b]",
+  "direction": "compile",
+  "expect": "E303",
+  "label": "quote inside a bare value"
+ },
+ {
+  "input": "[READ|path=a\\b]",
+  "direction": "compile",
+  "expect": "E303",
+  "label": "backslash inside a bare value"
+ },
+ {
+  "input": "[READ|path=a b]",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "space inside a bare value"
+ },
+ {
+  "input": " [READ]",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "leading whitespace"
+ },
+ {
+  "input": "[READ] ",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "trailing whitespace"
+ },
+ {
+  "input": "[READ|]",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "pipe without a modifier"
+ },
+ {
+  "input": "[|path=x]",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "modifier list without a verb"
+ },
+ {
+  "input": "[READ|path=a[b]",
+  "direction": "compile",
+  "expect": "E303",
+  "label": "opening bracket inside a bare value"
+ },
+ {
+  "input": "[READ|path=\"a\tb\"]",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "raw tab inside a quoted value"
+ },
+ {
+  "input": "[READ|path=\"a b\"]",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "raw U+2028 inside a quoted value"
+ },
+ {
+  "input": "RDΦGH",
+  "direction": "decompile",
+  "expect": "E502",
+  "label": "no header"
+ },
+ {
+  "input": "#iml/0.1/88d05d0839c1 RD",
+  "direction": "decompile",
+  "expect": "E502",
+  "label": "wrong version"
+ },
+ {
+  "input": "#iml/0.2/000000000000 RD",
+  "direction": "decompile",
+  "expect": "E502",
+  "label": "digest mismatch"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1RD",
+  "direction": "decompile",
+  "expect": "E300",
+  "label": "no space after the header"
+ },
+ {
+  "input": "#iml/0.2/88D05D0839C1 RD",
+  "direction": "decompile",
+  "expect": "E300",
+  "label": "upper-case hex in the header"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839 RD",
+  "direction": "decompile",
+  "expect": "E300",
+  "label": "short digest prefix"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 ",
+  "direction": "decompile",
+  "expect": "E300",
+  "label": "empty chain"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 OT",
+  "direction": "decompile",
+  "expect": "E304",
+  "label": "OT is not a root"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 ZZ",
+  "direction": "decompile",
+  "expect": "E304",
+  "label": "unknown root"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 RDpt=x→OT",
+  "direction": "decompile",
+  "expect": "E304",
+  "label": "OT after an arrow"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 rd",
+  "direction": "decompile",
+  "expect": "E300",
+  "label": "lower-case root"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 RDΦZZ",
+  "direction": "decompile",
+  "expect": "E200",
+  "label": "unknown mark"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 RDΦ{bad}",
+  "direction": "decompile",
+  "expect": "E200",
+  "label": "custom entity name in lower case"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 RDΦ{PREV}",
+  "direction": "decompile",
+  "expect": "E200",
+  "label": "registered entity written as custom"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 RDsr=Φ{}",
+  "direction": "decompile",
+  "expect": "E200",
+  "label": "empty custom entity name in value position"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 RDzz=x",
+  "direction": "decompile",
+  "expect": "E302",
+  "label": "unknown key code"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 RDpt",
+  "direction": "decompile",
+  "expect": "E300",
+  "label": "key code without ="
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 RDpt=",
+  "direction": "decompile",
+  "expect": "E300",
+  "label": "empty value"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 RDpt=~x",
+  "direction": "decompile",
+  "expect": "E303",
+  "label": "value code not in the (empty) table"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 RDpt=~",
+  "direction": "decompile",
+  "expect": "E300",
+  "label": "empty value code"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 RDpt=\"a",
+  "direction": "decompile",
+  "expect": "E300",
+  "label": "unterminated quote"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 RDpt=\"a\\q\"",
+  "direction": "decompile",
+  "expect": "E300",
+  "label": "bad escape"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 RDpt=\"a\"b",
+  "direction": "decompile",
+  "expect": "E300",
+  "label": "stray character after a quoted value"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 RDpt=a\"b",
+  "direction": "decompile",
+  "expect": "E303",
+  "label": "quote inside a bare value"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 RDpt=a\\b",
+  "direction": "decompile",
+  "expect": "E303",
+  "label": "backslash inside a bare value"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 RD pt=a",
+  "direction": "decompile",
+  "expect": "E300",
+  "label": "whitespace inside the chain"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 Ω→RD",
+  "direction": "decompile",
+  "expect": "E502",
+  "label": "Ω not last"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 ΩΦGH",
+  "direction": "decompile",
+  "expect": "E300",
+  "label": "Ω with a target"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 RD→",
+  "direction": "decompile",
+  "expect": "E300",
+  "label": "trailing arrow"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 →RD",
+  "direction": "decompile",
+  "expect": "E300",
+  "label": "leading arrow"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 RDpt=a,",
+  "direction": "decompile",
+  "expect": "E300",
+  "label": "trailing comma"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 RDpt=a,,",
+  "direction": "decompile",
+  "expect": "E300",
+  "label": "double comma"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 RDΦGHPT=a",
+  "direction": "decompile",
+  "expect": "E300",
+  "label": "upper-case key code"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 RDsr=ΦG",
+  "direction": "decompile",
+  "expect": "E300",
+  "label": "one-character mark"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 RDΦ{GH",
+  "direction": "decompile",
+  "expect": "E300",
+  "label": "unterminated custom entity"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 RD=>FM",
+  "direction": "decompile",
+  "expect": "E300",
+  "label": "I-Lang pipe operator inside IML"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 RD\n",
+  "direction": "decompile",
+  "expect": "E300",
+  "label": "newline inside the message"
+ },
+ {
+  "input": "#iml/2/88d05d0839c1 RD",
+  "direction": "decompile",
+  "expect": "E300",
+  "label": "version without a dot"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1  RD",
+  "direction": "decompile",
+  "expect": "E300",
+  "label": "two spaces after the header"
+ },
+ {
+  "input": "#iml/0.1/88D05D0839C1 RD",
+  "direction": "decompile",
+  "expect": "E300",
+  "label": "bad shape is reported before the wrong version"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1",
+  "direction": "decompile",
+  "expect": "E300",
+  "label": "header alone, no space and no chain"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 RDpt=\"a\tb\"",
+  "direction": "decompile",
+  "expect": "E300",
+  "label": "raw tab inside a quoted value"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 RDpt=\"a b\"",
+  "direction": "decompile",
+  "expect": "E300",
+  "label": "raw U+2029 inside a quoted value"
+ },
+ {
+  "input": "[READ:@SRC|path=a\u0001b]=>[Ω]",
+  "direction": "compile",
+  "expect": "E300",
+  "label": "raw control character U+0001 inside a bare value"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 RDΦSRpt=ab→Ω",
+  "direction": "decompile",
+  "expect": "E300",
+  "label": "raw control character U+007F inside a bare value"
+ }
 ]

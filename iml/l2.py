@@ -7,24 +7,30 @@ Values are SPEC.md 2.4 barewords, quoted strings with the escapes \\" \\\\ \\n, 
 entity references `@NAME`. Nothing else is accepted (E502 for constructs outside the
 subset, E300 for malformed text).
 
+A bare value runs to the next `,` `|` or `]`. Inside it `[` `"` `\\` are E303 and
+whitespace is E300; `=` and `>` are content (`whr=score>80`). Leading or trailing
+whitespace on the line, a dangling `=>`, and a raw control character inside a quoted
+value are E300.
+
 Canonical print: `[VERB:@TARGET|k=v,k=v]=>[...]`, verbs by canon name, OUT as `[Ω]`,
 values bare when the content is a bareword without whitespace or `,` `|` `]` `[` `"` `\\`
-`=` `>` and not starting with `@`, otherwise quoted. No whitespace anywhere.
+and not starting with `@`, otherwise quoted. No whitespace anywhere.
 """
 
 from .codec import (Chain, Op, Value, RE_NAME, OMEGA, quote, scan_quoted,
-                    check_no_whitespace)
+                    check_no_whitespace, is_control)
 from .errors import IMLError
 from .registry import default_registry
 
-ILANG_RESERVED_IN_BARE = set(',|][ "\\=>')
+ILANG_RESERVED_IN_BARE = set(',|][ "\\')   # `=` and `>` are content
+ILANG_E303_IN_BARE = ('[', '"', "\\")        # `,` `|` `]` end the value instead
 
 
 def ilang_bareable(content):
     if not content or content[0] == "@":
         return False
     for c in content:
-        if c in ILANG_RESERVED_IN_BARE or c.isspace():
+        if c in ILANG_RESERVED_IN_BARE or c.isspace() or is_control(c):
             return False
     return True
 
@@ -53,6 +59,10 @@ def parse_L2(text, registry=None):
     reg = registry or default_registry()
     if not isinstance(text, str) or not text:
         raise IMLError("E300", "empty input", 0)
+    if text[0].isspace():
+        raise IMLError("E300", "leading whitespace before the operation chain", 0)
+    if text[-1].isspace():
+        raise IMLError("E300", "trailing whitespace after the operation chain", len(text) - 1)
     if text[0] != "[":
         raise IMLError("E502", "outside the 0.2 subset: an operation chain starts with `[` (seen %r)" % text[:12], 0)
     check_no_whitespace(text)
@@ -138,7 +148,9 @@ def parse_L2(text, registry=None):
                     if not raw:
                         raise IMLError("E300", "empty value for key %s" % key, i, idx)
                     for k, ch in enumerate(raw):
-                        if ch in ('"', "\\"):
+                        if is_control(ch):
+                            raise IMLError("E300", "raw control character U+%04X in bare value" % ord(ch), i + k, idx)
+                        if ch in ILANG_E303_IN_BARE:
                             raise IMLError("E303", "reserved character `%s` in bare value" % ch, i + k, idx)
                     val = Value("bare", raw)
                     i = j

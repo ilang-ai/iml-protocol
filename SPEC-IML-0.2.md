@@ -1,12 +1,12 @@
 # IML (I-Lang Machine Layer) 0.2
 
-::STATE{@SPEC, id:IML-0.2, layer:machine, status:adopted, date:2026-09-18}
+::STATE{@SPEC, id:IML-0.2, revision:0.2.1, layer:machine, status:adopted, date:2026-09-18}
 ::STATE{@SPEC, canon:ilang-ai/ilang-spec, canon_pin:127ba56, canon_commit:127ba56f4eb1f35c2951d4aec4b7bd22831119ff, canon_version:v4.2.0}
 ::STATE{@SPEC, registers_nothing:true, verbs_derived:88, aliases_derived:13, keys_derived:49, entities_derived:25, value_code_tables:empty}
 ::STATE{@SPEC, replaces:drafts/IML-draft-0.1.md, scope_fixed_by:ROADMAP.md, subset:linear_pipelines}
 ::STATE{@SPEC, authors:Long_Quan_Zhu(Max/@SUN)+CC(@CLAUDE), orcid:0009-0004-4540-8082}
 
-Purpose: IML (I-Lang Machine Layer) is a compact machine form of one I-Lang operation chain. A codec compiles a chain in the supported subset to one line of IML and decompiles that line back to the chain. This document is the specification of version 0.2. It fixes the subset (§0), the registry and its derivation (§1), the lexical grammar and its segmentation rule (§2), the message header (§3), the treatment of OUT and of the Greek aliases (§4), the canonical I-Lang print (§5), the round-trip law (§6), the error codes (§7), the measurement report (§8), and what lies outside 0.2 (§9).
+Purpose: IML (I-Lang Machine Layer) is a machine form of one I-Lang operation chain, with fixed-width codes derived from the canon. A codec compiles a chain in the supported subset to one line of IML and decompiles that line back to the chain. This document is the specification of version 0.2. It fixes the subset (§0), the registry and its derivation (§1), the lexical grammar and its segmentation rule (§2), the message header (§3), the treatment of OUT and of the Greek aliases (§4), the canonical I-Lang print (§5), the round-trip law (§6), the error codes (§7), the measurement report (§8), and what lies outside 0.2 (§9). The worked example is §10, the repository layout §11 and the revision history §12.
 
 IML sits under I-Lang. I-Lang carries the meaning; IML is a spelling of it that a codec produces and reads. IML registers no verb, no modifier key, no entity, no declaration and no error code. Every code in an IML message is derived by a fixed algorithm from a name in the I-Lang canon at the pinned commit, and the derived table is a file in this repository. The registry file is authoritative for every code. Where a code appears in this text it is hand-derived by the algorithm of §1, and the file corrects the text, not the other way round.
 
@@ -24,7 +24,7 @@ The supported subset:
 
 - Verbs: the 88 canon verbs of §3 and the 13 Greek aliases of §3.10. An alias means its verb.
 - Target: a registered entity `@NAME` (25 registered: 8 core, 6 external, 8 role, 3 media) or a custom entity whose name matches `[A-Z][A-Z0-9_]*` (§5.3). A verb in the target slot, the `[Π:VERB]` and `[BATC:VERB]` form of §3.9, is not supported in 0.2 (E502).
-- Modifiers: the 29 core keys of §4 and the 20 media profile keys of v4.1 §4.4.2, written `key=value` and separated by commas (§4: "Multiple modifiers separated by commas"). `|` separates the verb or the target from the modifier list and has no other place in an operation. The dialect that separates modifiers with `|` is not accepted (§7, E303: the value would contain `|`). The codec checks that a key is registered. It does not check the media gating of v4.1 §4.4.1: whether a profile key is in force for the target is I-Lang semantics, reported by the canon validator, not by the codec.
+- Modifiers: the 29 core keys of §4 and the 20 media profile keys of v4.1 §4.4.2, written `key=value` and separated by commas (§4: "Multiple modifiers separated by commas"). `|` separates the verb or the target from the modifier list and has no other place in an operation. The dialect that separates modifiers with `|` is not accepted: a bare value ends at `|`, and a `|` that follows a value is a stray character (§7, E300). The codec checks that a key is registered. It does not check the media gating of v4.1 §4.4.1: whether a profile key is in force for the target is I-Lang semantics, reported by the canon validator, not by the codec.
 - Values: the forms of §2.4: barewords, quoted strings with the escapes `\"` `\\` `\n`, numbers, booleans, and entity references `@NAME`.
 - OUT, alias `Ω`, may appear only as the last operation of the chain. It is not required.
 
@@ -40,7 +40,7 @@ T:OUT_or_Ω_only_as_the_last_operation|not_required
 T:media_gating_not_checked_by_the_codec|left_to_I-Lang_semantics
 A:verb_in_the_target_slot⇒E502
 A:declaration|temporal_prefix|parallel|conditional|loop|comment|second_chain|trailing_text⇒E502
-A:pipe_between_modifiers⇒E303
+A:pipe_between_modifiers⇒E300
 
 ---
 
@@ -152,11 +152,13 @@ mods      := kv ("," kv)*
 kv        := KEY "=" value
 KEY       := [a-z]{2}                                ; a key code from the registry
 value     := quoted | entityref | code | bare
-quoted    := '"' (escape | [^"\\])* '"'              ; escape := "\" ( '"' | "\" | "n" )   (SPEC.md §2.4)
+quoted    := '"' (escape | [^"\\])* '"'              ; escape := "\" ( '"' | "\" | "n" )   (SPEC.md §2.4); no raw control character, see below
 entityref := "Φ" (MARK | "{" NAME "}")
 code      := "~" [a-z0-9]+                           ; looked up in value_codes[key]; 0.2: always E303
 bare      := [^,→"\\ \t\r\n]+  and does not start with "~", "Φ", "\"", and is not empty
 ```
+
+A raw control character inside a quoted value, U+0000 to U+001F, U+007F, U+2028 or U+2029, is E300, in IML input and in I-Lang input alike; a newline is written only as the escape `\n`.
 
 ### 2.2 Segmentation
 
@@ -168,7 +170,7 @@ The `bare` production governs what a bare value may contain: any character excep
 
 ### 2.3 Typing
 
-Every scalar keeps its lexeme. The AST records for each value its kind, one of `bare`, `quoted`, `entity`, `code`, and its text. Numbers and booleans are barewords whose text is preserved: `007` stays `007`, `1.0` stays `1.0`, `true` stays `true`. The codec never rewrites a value; a type is a validation tag, not a transformation. A `quoted` value's content is its unescaped text. `quoted` and `bare` values with the same content are the same AST value: quoting is spelling (§6).
+Every scalar keeps its lexeme. The AST records for each value its kind, one of `bare`, `quoted`, `entity`, `code`, and its text. Numbers and booleans are barewords whose text is preserved: `007` stays `007`, `1.0` stays `1.0`, `true` stays `true`. The codec never rewrites a value; a type is a validation tag, not a transformation. A `quoted` value's content is its unescaped text. `quoted` and `bare` values with the same content are the same AST value: quoting is spelling (§6). Duplicate keys in one operation are kept in order; the codec does not check them.
 
 ### 2.4 Entity references in value position
 
@@ -189,10 +191,12 @@ T:reserved=phi_omega_arrow_tilde_comma_equals_quote_backslash_braces_hash_whites
 T:segmentation_without_lookahead|root_2_upper_at_op_start|target_starts_with_phi|key_2_lower_then_equals|value_ends_at_comma_or_arrow_outside_quotes
 T:bare_production_governs_bare_content|first_position_excludes_tilde_phi_quote
 T:every_scalar_keeps_its_lexeme|kind=bare|quoted|entity|code|type_is_a_validation_tag
+T:duplicate_keys_kept_in_order|not_checked_by_the_codec
 T:entity_reference_in_value_position_is_its_own_kind
 T:compile_writes_bare_when_the_content_satisfies_bare|else_quoted_with_§2.4_escapes
 A:codec_rewrites_a_value⇒violates_this_section
-A:bare_value_starting_with_tilde_phi_or_quote⇒E303
+A:raw_control_character_inside_a_quoted_value⇒E300
+A:value_starting_with_tilde_or_phi⇒read_as_code_or_entity_reference|judged_by_that_rule
 
 ---
 
@@ -200,11 +204,12 @@ A:bare_value_starting_with_tilde_phi_or_quote⇒E303
 
 The header is `#iml/0.2/` followed by 12 lowercase hex characters, followed by one space. The 12 characters are the first 12 of the registry digest (§1.4).
 
-Decompile refuses a message without a header, with a version other than 0.2, or with a digest prefix that does not match the loaded registry (E502). A header that begins `#iml/0.2/` but does not continue with 12 lowercase hex characters and one space has a bad shape (E300). Compile always writes the header from the loaded registry.
+Decompile reads the header in this order. A message that does not begin with `#iml/` has no header: E502. Otherwise the header must match `^#iml/([0-9]+\.[0-9]+)/([0-9a-f]{12}) `: two digit groups joined by one dot, a slash, exactly 12 lowercase hex characters, one space. A message that begins with `#iml/` but does not match has a bad shape: E300; so `#iml/2/…`, upper-case hex, a hex run of another length, and a missing space are E300. A matched header whose version is not `0.2` is E502, and a matched header whose 12 characters are not the loaded registry's is E502. The shape is judged before the version and the digest: `#iml/0.1/` followed by upper-case hex is E300, not E502. Two spaces after the header match the pattern at the first space; the second space is then a stray character in the chain, E300. Compile always writes the header from the loaded registry.
 
 ::CLAUSE{HEADER|conf:confirmed|scope:iml-0.2}
 T:header=#iml/0.2/+12_lowercase_hex+one_space
 T:hex=the_first_12_characters_of_the_registry_digest
+T:read_order=no_#iml/_prefix⇒E502|prefix_without_the_shape⇒E300|shape_with_another_version⇒E502|shape_with_another_digest⇒E502
 T:compile_always_writes_the_header_from_the_loaded_registry
 A:no_header|version_other_than_0.2|digest_prefix_mismatch⇒E502
 A:header_present_with_a_bad_shape⇒E300
@@ -237,20 +242,22 @@ A:OUT_with_a_target_in_input⇒E502
 
 The form is `[VERB:@TARGET|k=v,k=v]=>[...]`. Verbs print by canon name. OUT prints as `[Ω]`, with modifiers `[Ω|k=v]`. Targets print `@NAME`. An operation without a target omits `:@TARGET`; an operation without modifiers omits `|` and the list.
 
-A value prints bare when its content is a bareword that contains no whitespace, none of `,` `|` `]` `[` `"` `\` `=` `>` (the `=>` operator), and does not start with `@`. Otherwise it prints quoted with the §2.4 escapes. An entity reference prints `@NAME`. No whitespace anywhere.
+A value prints bare when its content is not empty, contains no whitespace, none of `,` `|` `]` `[` `"` `\`, and does not start with `@`. `=` and `>` are content: `whr=score>80` (the example of draft 0.1, which the canon validator accepts) and `whr=lvl:fatal` (canon §10.1) print bare. Otherwise it prints quoted with the §2.4 escapes. An entity reference prints `@NAME`. No whitespace anywhere.
 
 ### 5.2 Accepted input
 
-`parse_L2` reads a chain in the subset of §0. It accepts the canonical form and three spellings of it: a Greek alias for a verb, `[OUT]` for `[Ω]`, and quotes around a value whose content could print bare. A bare value in I-Lang input runs to the next `,` or `]` and satisfies the print condition of §5.1 (no whitespace, none of `,` `|` `]` `[` `"` `\` `=` `>`); content with any of those characters is written quoted (§2.4: quoted strings carry spaces or special characters). A bare value beginning with `@` is an entity reference (§2.4). Whitespace outside a quoted value is a stray character (E300).
+`parse_L2` reads a chain in the subset of §0. It accepts the canonical form and three spellings of it: a Greek alias for a verb, `[OUT]` for `[Ω]`, and quotes around a value whose content could print bare. A bare value in I-Lang input runs to the next `,`, `|` or `]`; a `|` there is a stray character (E300, §0). Inside a bare value `[`, `"` and `\` are E303 and whitespace is E300; `=` and `>` are content. Content with `,` `|` `]` `[` `"` `\` or whitespace is written quoted (§2.4: quoted strings carry spaces or special characters). A bare value beginning with `@` is an entity reference (§2.4). Whitespace outside a quoted value is a stray character (E300); so are whitespace before or after the chain, and a dangling `=>` at the end of the chain.
 
 ::CLAUSE{PRINT|conf:confirmed|scope:iml-0.2}
 T:verb_by_canon_name|OUT_as_Ω|target_as_@NAME|modifiers_key=value_comma_separated|ops_joined_by_the_pipe_operator
-T:value_bare_iff_bareword_without_whitespace_or_special_characters_and_not_starting_with_@|else_quoted_with_§2.4_escapes
+T:value_bare_iff_not_empty|no_whitespace|none_of_comma_pipe_brackets_quote_backslash|not_starting_with_@|equals_and_greater_than_are_content|else_quoted_with_§2.4_escapes
 T:entity_reference_prints_@NAME
 T:no_whitespace_anywhere
 T:parse_accepts_the_canonical_form_plus_three_spellings|alias|OUT_word|quotes_around_bare_content
 A:print_reproduces_the_input_spelling⇒not_canonical
 A:whitespace_outside_quotes_in_input⇒E300
+A:whitespace_before_or_after_the_chain|dangling_pipe_operator⇒E300
+A:bracket_quote_or_backslash_inside_a_bare_value⇒E303
 
 ---
 
@@ -286,14 +293,14 @@ The codec fails closed; the first error stops it. Codes reuse §9 of the canon. 
 
 | Code | Canon name | Raised when |
 |------|------------|-------------|
-| E300 | Syntax Error | bad header shape; unterminated quote; bad escape; empty value; stray character; missing `=` |
+| E300 | Syntax Error | bad header shape (§3); unterminated quote; bad escape; raw control character inside a quoted value; empty value; stray character, a `|` between modifiers included; missing `=`; whitespace in a bare value; whitespace before or after the chain; a dangling `=>` |
 | E304 | Unknown Verb | unknown root (decompile) or unknown verb (compile), `OT` included |
 | E302 | Invalid Modifier | unknown key code (decompile) or unknown key (compile) |
 | E200 | Entity Not Found | unknown registered mark; an entity name that does not match `[A-Z][A-Z0-9_]*` |
-| E303 | Invalid Value | `~code` not in the key's table (always, in 0.2); bare value with a reserved character; bare value starting with `~`, `Φ` or `"` |
+| E303 | Invalid Value | bare value containing `,` `|` `]` `[` `"` `\` (§5.1); `~code` not in the key's table (always, in 0.2) |
 | E502 | Unsupported Format | no header; wrong version; digest mismatch; declaration or other construct outside the subset; OUT not last; `[Π:VERB]` form; more than one chain |
 
-Reading of the table. A reserved character inside a bare value is one that the value's `bare` production excludes (§2.2 for IML, §5.2 for I-Lang); it is E303. A character that no production admits at its position, outside a value, is a stray character, E300; so is an op that starts with neither `Ω` nor two characters of `[A-Z0-9]`. Two characters of `[A-Z0-9]` that are not a root in the registry are E304. On the header, §3 gives the split between E502 and E300.
+Reading of the table. A raw control character (U+0000 to U+001F, U+007F, U+2028, U+2029) is E300 wherever it appears in a value, bare or quoted; a newline is only ever the escape `\n` inside quotes. In I-Lang input a bare value ends at `,`, `|` or `]`, so of the E303 set only `[`, `"` and `\` can stand inside one; a `|` that follows a value is a stray character, E300 (§0). In IML a bare value ends at `,` or `→`, and `"` or `\` inside it is E303 (§2.1). A value that starts with `~` or `Φ` is not a bare value: it is read as a code or as an entity reference and judged by that rule (E303 for a code outside its table, E200 or E300 for a malformed reference); a value that starts with `"` is a quoted value. A character that no production admits at its position, outside a value, is a stray character, E300; so is an op that starts with neither `Ω` nor two characters of `[A-Z0-9]`. Two characters of `[A-Z0-9]` that are not a root in the registry are E304. On the header, §3 gives the split between E502 and E300.
 
 Error objects carry `code`, `message`, `offset` (0-based character index into the input) and, for compile, the operation index.
 
@@ -421,11 +428,24 @@ The executable form of §1, §6 and §7 lives beside this document:
 - `tests/test_registry.py`, `tests/test_codec.py`, `tests/test_roundtrip.py`, `tests/test_malformed.py` (stdlib unittest, `python -m unittest discover -s tests`)
 - `tools/measure.py` and `measurements/0.2-2026-09-18.md`
 - `.github/workflows/test.yml` (python 3.12: derive check and unittest)
+- `.gitattributes` (LF for every text file)
 
-Python 3.10 or later. Standard library only for the codec and the tests; tiktoken only in `tools/measure.py`, and optional there. All files LF line ends, UTF-8, no BOM. `README.md`, `ROADMAP.md`, `LICENSE` and `drafts/` are not touched by 0.2 work.
+Python 3.10 or later. Standard library only for the codec and the tests; tiktoken only in `tools/measure.py`, and optional there. All files LF line ends, UTF-8, no BOM; `.gitattributes` pins LF for every text file, so a Windows clone made with `core.autocrlf=true` keeps the sha256 of `canon/` and `tools/derive_registry.py --check` passes. `LICENSE` and `drafts/` are not touched; `README.md` and `ROADMAP.md` are updated at every release.
 
 ::CLAUSE{FILES|conf:confirmed|scope:iml-0.2}
 T:python_3.10_or_later|standard_library_only_for_codec_and_tests|tiktoken_only_in_tools/measure.py_and_optional
-T:LF_line_ends|UTF-8|no_BOM
+T:LF_line_ends|UTF-8|no_BOM|.gitattributes_pins_LF
+T:README_and_ROADMAP_updated_at_every_release
 T:non_normative|the_registry_file_and_the_corpora_are_the_executable_form_of_§1_§6_§7
-A:README_ROADMAP_LICENSE_or_drafts_edited_by_0.2_work⇒out_of_scope
+A:LICENSE_or_drafts_edited_by_0.2_work⇒out_of_scope
+
+---
+
+## 12. Revision history
+
+- 0.2.0 (2026-09-18): first implemented version.
+- 0.2.1 (2026-09-18): clarifications in §0 §2 §3 §5 §7 §11; the message form and the registry are unchanged (digest 88d05d0839c1…).
+
+::CLAUSE{REVISIONS|conf:confirmed|scope:iml-0.2}
+T:0.2.1=clarifications_in_§0_§2_§3_§5_§7_§11|message_form_unchanged|registry_unchanged|digest_88d05d0839c1
+A:revision_changes_the_message_form_or_the_registry⇒a_new_version_not_a_revision

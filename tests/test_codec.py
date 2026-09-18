@@ -165,6 +165,46 @@ class TestAst(unittest.TestCase):
         self.assertEqual(parse_L2("[OUT]"), parse_L2("[Ω]"))
         self.assertEqual(print_L2(parse_L2("[OUT]")), "[Ω]")
 
+    def test_equals_and_greater_than_are_bare_content(self):
+        x = "[FILT:@SRC|whr=score>80,mch=a=1]=>[Ω]"
+        a = parse_L2(x)
+        self.assertEqual([v for _, v in a.ops[0].mods], [Value("bare", "score>80"), Value("bare", "a=1")])
+        self.assertEqual(print_L2(a), x)
+        m = compile(a)
+        self.assertEqual(decompile(m), a)
+        self.assertEqual(print_L2(decompile(m)), x)
+        self.assertEqual(print_L2(parse_L2('[FILT|whr="a=>b"]')), "[FILT|whr=a=>b]")
+
+    def test_print_quotes_the_reserved_characters_only(self):
+        x = '[READ|path="a[b",fmt="x|y",lng="c,d",sty="e]f",ton="g\\"h",len="i\\\\j",lim="k l",typ=""]'
+        self.assertEqual(print_L2(parse_L2(x)), x)
+        for bad, code in (("[READ|path=a[b]", "E303"), ('[READ|path=a"b]', "E303"), ("[READ|path=a\\b]", "E303"),
+                          ("[READ|path=a b]", "E300"), ("[READ|path=a|b]", "E300")):
+            with self.assertRaises(IMLError) as cm:
+                parse_L2(bad)
+            self.assertEqual(cm.exception.code, code, bad)
+
+    def test_raw_control_characters_inside_quotes(self):
+        for ch in ("\x00", "\t", "\n", "\x1f", "\x7f", "\u2028", "\u2029"):
+            with self.assertRaises(IMLError) as cm:
+                parse_L2('[READ|path="a%sb"]' % ch)
+            self.assertEqual(cm.exception.code, "E300", repr(ch))
+            with self.assertRaises(IMLError) as cm:
+                decompile(default_registry().header + ' RDpt="a%sb"' % ch)
+            self.assertEqual(cm.exception.code, "E300", repr(ch))
+        a = parse_L2('[READ|path="a\\nb"]')
+        self.assertEqual(a.ops[0].mods[0][1].text, "a\nb")
+        self.assertEqual(print_L2(a), '[READ|path="a\\nb"]')
+
+    def test_header_shape_before_version_and_digest(self):
+        h = default_registry().header
+        for text, code in (("RD", "E502"), ("#iml/2/88d05d0839c1 RD", "E300"), ("#iml/0.1/88D05D0839C1 RD", "E300"),
+                           ("#iml/0.1/88d05d0839c1 RD", "E502"), ("#iml/0.2/000000000000 RD", "E502"),
+                           (h + "RD", "E300"), (h + "  RD", "E300"), (h, "E300")):
+            with self.assertRaises(IMLError) as cm:
+                decompile(text)
+            self.assertEqual(cm.exception.code, code, text)
+
     def test_entity_reference_is_distinct_from_string(self):
         ent = parse_L2("[READ|src=@PREV]")
         s = parse_L2('[READ|src="@PREV"]')

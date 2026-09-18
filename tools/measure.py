@@ -15,9 +15,10 @@ are not any vendor's billing. tiktoken is optional: when it cannot be imported o
 encoding cannot be loaded (offline cache missing), the token columns are left out and
 the document says so.
 
-Also measured: RULE-SHEET.md at the repository root, when it exists.
+Also measured: RULE-SHEET.md at the repository root, when it exists. Not measured: the
+reply. The codec makes no model calls, so 0.2 has no reply to measure; the report says so.
 
-Usage: python tools/measure.py [--date YYYY-MM-DD] [--out PATH]
+Usage: python tools/measure.py [--date YYYY-MM-DD] [--out PATH] [--note TEXT]
 """
 
 import argparse
@@ -35,6 +36,7 @@ GOLDEN = ROOT / "corpus" / "golden"
 RULE_SHEET = ROOT / "RULE-SHEET.md"
 ENCODINGS = ["cl100k_base", "o200k_base"]
 FORMS = ["I-Lang", "IML", "JSON"]
+REPLY_NOTE = "Reply cost: not measured in 0.2, the codec makes no model calls"
 
 
 def json_form(chain):
@@ -89,8 +91,9 @@ def main(argv=None):
     p = argparse.ArgumentParser(description="measure the golden corpus in three forms")
     p.add_argument("--date", default=datetime.date.today().isoformat())
     p.add_argument("--out", default=None)
+    p.add_argument("--note", default=None, help="one sentence written under the title, e.g. why the report was regenerated")
     a = p.parse_args(argv)
-    out = Path(a.out) if a.out else ROOT / "measurements" / ("0.2-%s.md" % a.date)
+    out = Path(a.out).resolve() if a.out else ROOT / "measurements" / ("0.2-%s.md" % a.date)
 
     reg = default_registry()
     encs, notes = load_tokenizers()
@@ -108,6 +111,9 @@ def main(argv=None):
     lines = []
     lines.append("# IML 0.2 measurement, %s" % a.date)
     lines.append("")
+    if a.note:
+        lines.append(a.note)
+        lines.append("")
     lines.append("Corpus: the %d golden chains in `corpus/golden/` (registry digest `%s`, canon commit `%s`)."
                  % (n, reg.digest[:12], reg.commit[:12]))
     lines.append("Python %s. %s." % (sys.version.split()[0], "; ".join(notes) if notes else "no tokenizer notes"))
@@ -124,6 +130,8 @@ def main(argv=None):
                  ' when absent, entity references as `"@NAME"`, every other value as its content string.' % reg.header)
     lines.append("")
     lines.append("No figure below is called a saving; the table is the table (ROADMAP gate: efficiency claim).")
+    lines.append("")
+    lines.append(REPLY_NOTE + " (ROADMAP item 13 lists the reply; it is counted when a model reads IML, not here).")
     lines.append("")
     lines.append("## Totals over %d chains" % n)
     lines.append("")
@@ -163,9 +171,14 @@ def main(argv=None):
     lines.append("")
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_bytes(("\n".join(lines) + "\n").encode("utf-8"))
-    print("wrote %s" % out.relative_to(ROOT))
+    try:
+        shown = out.relative_to(ROOT)
+    except ValueError:            # --out points outside the repository
+        shown = out
+    print("wrote %s" % shown)
     for f in FORMS:
         print("%-7s " % f + "  ".join("%s=%d" % (u, totals[f][u]) for u in units))
+    print(REPLY_NOTE)
     return 0
 
 

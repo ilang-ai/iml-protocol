@@ -1,6 +1,6 @@
 """Round-trip laws (design 0.2 section 6) on the golden corpus and on 10,000 generated
 chains, plus the independent legality oracle: the vendored canon validator run on the
-printed I-Lang of a 500-chain sample (raw mode, first line `::ILANG::v4.0`).
+printed I-Lang of a 500-chain sample (raw mode, opened by the PREAMBLE below).
 
 Laws checked for every chain x (AST a = parse_L2(x), message m = compile(a)):
   L1   decompile(m) == a                             (AST fidelity)
@@ -35,6 +35,15 @@ BARE_ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.
 FREE_ALPHABET = "abcdefghijklmnopqrstuvwxyz 0123456789,|][=>\"\\\n:@~Φ→Ωé中文"
 NUMBERS = ["007", "0", "1", "1.0", "-3", "42", "3.14", "1e5", "0.50", "1.00", "2048x1365", "16:9"]
 CUSTOM = ["MYDATA", "HOUSE_LOOK", "X", "A1", "REPORT_2026", "T_", "ZINE_LOOK", "OUT", "READ"]
+
+# The validator reads every tag-shaped line right after the `::ILANG::` marker as document
+# metadata (its preamble) and does not check it; a single operation such as `[READ]` or
+# `[READ:@SRC|path=x]` has that shape. A tag line keeps the preamble open, so `[TYPE:test]`
+# alone would not protect a sample whose first line is a single operation; the `::STATE`
+# line closes the preamble, and every sample line after it is checked as an operation.
+# TestValidatorHarness proves this on a line the validator must reject.
+PREAMBLE = "::ILANG::v4.0\n[TYPE:test]\n::STATE{@SAMPLE, role:test}\n"
+PREAMBLE_LINES = PREAMBLE.count("\n")
 
 
 class Generator:
@@ -125,13 +134,21 @@ def run_validator(lines):
     parsed JSON report of the one file."""
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / "sample.md"
-        path.write_bytes(("::ILANG::v4.0\n" + "\n".join(lines) + "\n").encode("utf-8"))
+        path.write_bytes((PREAMBLE + "\n".join(lines) + "\n").encode("utf-8"))
         r = subprocess.run([sys.executable, str(VALIDATOR), "--lint", str(path), "--json"],
                            capture_output=True, text=True, encoding="utf-8")
     if r.returncode not in (0, 1):
         raise AssertionError("validator failed to run: %s" % r.stderr)
     report = json.loads(r.stdout)
     return report["files"][0]
+
+
+class TestValidatorHarness(unittest.TestCase):
+    def test_single_operation_lines_are_checked_from_the_first_sample_line(self):
+        rep = run_validator(["[READ:@SRC|pth=x]", "[READ:@SRC]", "[READ:@SRC|pth=x]"])
+        errors = [(f["line"] - PREAMBLE_LINES, f["code"]) for f in rep["findings"] if f["level"] == "ERROR"]
+        self.assertEqual(rep["mode"], "raw")
+        self.assertEqual(errors, [(1, "E302"), (3, "E302")])
 
 
 class TestRoundTripGolden(unittest.TestCase):

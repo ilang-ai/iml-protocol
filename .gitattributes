@@ -1,0 +1,12 @@
+# Every text file is stored and checked out with LF. A Windows clone with
+# core.autocrlf=true would otherwise turn canon/ into CRLF, break the sha256 in
+# canon/PIN, and make tools/derive_registry.py --check abort.
+* text=auto eol=lf
+*.md text eol=lf
+*.py text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.ilang text eol=lf
+*.iml text eol=lf
+PIN text eol=lf
+LICENSE text eol=lf

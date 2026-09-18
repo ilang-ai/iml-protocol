@@ -19,18 +19,18 @@ Then modifiers, if any: `kk=value` pairs separated by `,`. A key is exactly two 
 
 Value kinds, by first character:
 
-- `"`: quoted string, escapes `\"` `\\` `\n`; the content is the unescaped text.
+- `"`: quoted string, escapes `\"` `\\` `\n`; the content is the unescaped text. A raw control character (U+0000 to U+001F, U+007F, U+2028, U+2029) inside the quotes is E300; a newline is only ever written `\n`.
 - `Φ`: entity reference, same two forms as a target; it becomes `@NAME`.
 - `~`: value code. 0.2 has no codes: report E303.
 - anything else: bare. Copy the characters exactly (`007` stays `007`, `true` stays `true`).
 
 ## 3. Writing I-Lang (canonical print)
 
-`[VERB:@TARGET|k=v,k=v]=>[VERB|k=v]=>[Ω]`. Verb by canon name. OUT as `[Ω]` or `[Ω|k=v]`. No target: omit `:@TARGET`. No modifiers: omit `|` and the list. Ops joined by `=>`. A value prints bare unless its content contains whitespace or one of `, | ] [ " \ = >` or starts with `@`; then quote it with the escapes above. An entity reference prints `@NAME`. No whitespace anywhere.
+`[VERB:@TARGET|k=v,k=v]=>[VERB|k=v]=>[Ω]`. Verb by canon name. OUT as `[Ω]` or `[Ω|k=v]`. No target: omit `:@TARGET`. No modifiers: omit `|` and the list. Ops joined by `=>`. A value prints bare unless it is empty, contains whitespace or one of `, | ] [ " \`, or starts with `@`; then quote it with the escapes above. `=` and `>` are content: `whr=score>80` prints bare. An entity reference prints `@NAME`. No whitespace anywhere.
 
 ## 4. Writing IML (I-Lang to IML)
 
-Input: `[VERB(:@TARGET)?(|k=v,k=v)?]` joined by `=>`, one chain. Aliases mean their verb: Σ MERGE, Δ DIFF, φ FILT, ∇ SORT, λ MAP, ∂ SPLIT, μ STAT, ψ SENT, ξ HASH, ζ CMPR, θ XLAT, Ω OUT, Π BATC.
+Input: `[VERB(:@TARGET)?(|k=v,k=v)?]` joined by `=>`, one chain, no whitespace before or after it. A bare value runs to the next `,` `|` or `]`; inside it `[` `"` `\` are E303 and whitespace is E300, `=` and `>` are content. Modifiers are separated by `,`; a `|` after a value is a stray character (E300). Aliases mean their verb: Σ MERGE, Δ DIFF, φ FILT, ∇ SORT, λ MAP, ∂ SPLIT, μ STAT, ψ SENT, ξ HASH, ζ CMPR, θ XLAT, Ω OUT, Π BATC.
 
 - Verb, or its alias, to the root from the registry. `[OUT]` and `[Ω]` both become `Ω`, with no target.
 - `@TARGET`: registered, `Φ` plus its mark; custom, `Φ{NAME}`. The name must match `[A-Z][A-Z0-9_]*`.
@@ -40,17 +40,17 @@ Input: `[VERB(:@TARGET)?(|k=v,k=v)?]` joined by `=>`, one chain. Aliases mean th
 
 ## 5. Outside the subset
 
-Report E502 and stop: a `::` declaration, `T[...]`, `PARALLEL{}` or `||`, a conditional, a loop, a comment, a verb in the target slot (`[Π:READ]`), OUT with a target, `Ω` before the last op, a second chain, anything after the chain, a missing or wrong header (version not 0.2, digest not the registry's).
+Report E502 and stop: a `::` declaration, `T[...]`, `PARALLEL{}` or `||`, a conditional, a loop, a comment, a verb in the target slot (`[Π:READ]`), OUT with a target, `Ω` before the last op, a second chain, anything after the chain, a message without a `#iml/` header, a well-shaped header with another version or another digest.
 
 ## 6. On error
 
-Stop at the first error. Report the code and the 0-based character offset (when compiling, also the op index). Never guess a root, key, mark or verb. Never repair, reorder or drop a value.
+Stop at the first error. A raw control character anywhere in a value is E300. Report the code and the 0-based character offset (when compiling, also the op index). Never guess a root, key, mark or verb. Never repair, reorder or drop a value.
 
-- E300 syntax: bad header shape, unterminated quote, bad escape, empty value, stray character, missing `=`.
+- E300 syntax: bad header shape (`#iml/` followed by anything but `<digits>.<digits>/<12 lowercase hex>` and one space, judged before the version and the digest), unterminated quote, bad escape, raw control character inside quotes, empty value, stray character (a `|` between modifiers included), missing `=`, whitespace in a bare value or before or after the chain, a dangling `=>`.
 - E304 unknown root or verb (`OT` included).
 - E302 unknown key code or key.
 - E200 unknown mark, or an entity name that fails `[A-Z][A-Z0-9_]*`.
-- E303 invalid value: a `~code`, a reserved character inside a bare value, a bare value starting with `~` `Φ` `"`.
+- E303 invalid value: a `~code` (no table has an entry in 0.2); `[` `"` `\` inside an I-Lang bare value; `"` `\` inside an IML bare value. A value starting with `~` or `Φ` is read as a code or an entity reference and judged by that rule.
 - E502 outside the subset, as in section 5.
 
 ## 7. Example

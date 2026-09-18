@@ -4,7 +4,7 @@ Versions are triggered by gates, not by dates. Each released version is an immut
 
 ## 0.2, the first implementable version
 
-Released 2026-09-18 as v0.2.0. Every item below is in the repository; README.md says where.
+Released 2026-09-18 as v0.2.0; fix release v0.2.1 the same day (see the record). Every item below is in the repository; README.md says where.
 
 Scope, and nothing beyond it:
 
@@ -20,7 +20,7 @@ Scope, and nothing beyond it:
 10. An unknown root, key or entity is an error; the codec fails closed.
 11. One reference codec.
 12. A golden corpus and a malformed corpus, disjoint from any prompt material used for evaluation.
-13. Measurement reported per tokenizer, in bytes, characters and tokens, including the rule sheet and the reply.
+13. Measurement reported per tokenizer, in bytes, characters and tokens, including the rule sheet and the reply (the reply is not measured in 0.2: the codec makes no model calls).
 
 ## Deferred to 0.3
 
@@ -50,3 +50,4 @@ Serialising OpenAPI schemas; variable-length verb coding; outreach to transport 
 | 2026-09-18 | Draft 0.1 reviewed: six blocking defects; 0.2 scope fixed as above. |
 | 2026-09-18 | Repository opened. |
 | 2026-09-18 | 0.2 released as v0.2.0: specification, registry derived from ilang-spec 127ba56, reference codec, 72 golden and 76 malformed cases, measurement report. On the golden corpus IML is longer than the I-Lang canonical print in bytes, characters and tokens. |
+| 2026-09-18 | 0.2.1 released as v0.2.1, a fix release after an adversarial review of a clean clone: `.gitattributes` pins LF so a Windows clone keeps the canon sha256; the I-Lang bare-value character set, the header shape and raw control characters inside quotes are fixed in the codec and stated in the specification; 15 malformed cases added; the measurement regenerated. The message form and the registry are unchanged (digest `88d05d0839c1`). |

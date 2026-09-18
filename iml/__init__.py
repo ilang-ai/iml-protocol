@@ -1,4 +1,4 @@
-"""IML (I-Lang Machine Layer) 0.2 reference codec.
+"""IML (I-Lang Machine Layer) 0.2 reference codec, release 0.2.1.
 
     from iml import parse_L2, print_L2, compile, decompile
     chain = parse_L2("[READ:@GH|path=readme.md]=>[XLAT|lng=zh]=>[FMT|fmt=md]=>[Ω]")
@@ -15,7 +15,7 @@ from .errors import CODES, IMLError
 from .l2 import parse_L2, print_L2
 from .registry import Registry, RegistryError, default_registry, load_registry
 
-__version__ = "0.2"
+__version__ = "0.2.1"
 
 __all__ = [
     "Chain", "Op", "Value", "compile", "decompile", "parse_L2", "print_L2",

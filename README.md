@@ -1,8 +1,8 @@
 # IML: I-Lang Machine Layer (Experimental Draft)
 
-A compact machine form of I-Lang v4.x operation chains, designed to be compiled from and decompiled back to readable I-Lang. IML (I-Lang Machine Layer) sits under I-Lang, which carries the meaning, and rides inside whatever transport carries the message. It replaces neither.
+A machine form of I-Lang v4.x operation chains, with fixed-width codes derived from the canon, designed to be compiled from and decompiled back to readable I-Lang. IML (I-Lang Machine Layer) sits under I-Lang, which carries the meaning, and rides inside whatever transport carries the message. It replaces neither.
 
-- **Status:** experimental. 0.2 is the first implemented version: [SPEC-IML-0.2.md](SPEC-IML-0.2.md), a registry derived from the I-Lang canon at commit 127ba56 (v4.2.0), a reference codec, golden and malformed corpora, and a measurement report. Draft 0.1 is archived under `drafts/` as the dated record. What is deferred to 0.3 and the gates for 1.0 are in [ROADMAP.md](ROADMAP.md).
+- **Status:** experimental. 0.2 is the first implemented version: [SPEC-IML-0.2.md](SPEC-IML-0.2.md), a registry derived from the I-Lang canon at commit 127ba56 (v4.2.0), a reference codec, golden and malformed corpora, and a measurement report. Release 0.2.1 (2026-09-18) is a fix release; the message form and the registry are unchanged. Draft 0.1 is archived under `drafts/` as the dated record. What is deferred to 0.3 and the gates for 1.0 are in [ROADMAP.md](ROADMAP.md).
 - **Canon:** the I-Lang protocol is specified in [ilang-ai/ilang-spec](https://github.com/ilang-ai/ilang-spec). IML registers no verb, modifier key, entity or declaration of its own; its vocabulary is derived from that canon at a pinned commit.
 - **Creator:** [Long Quan Zhu](https://orcid.org/0009-0004-4540-8082) (Max, @SUN). iLang Inc.
 - **License:** MIT.
@@ -12,13 +12,13 @@ A compact machine form of I-Lang v4.x operation chains, designed to be compiled 
 | Path | What it is |
 |------|------------|
 | `SPEC-IML-0.2.md` | The 0.2 specification: subset, registry derivation, grammar and segmentation, header, OUT and aliases, canonical print, round-trip law, error codes, measurement. |
-| `RULE-SHEET.md` | The short sheet a model is given to read and write IML: 1,350 tokens under cl100k_base. |
-| `registry/iml-registry-0.2.json` | The registry derived from the canon: 88 verb roots (OUT is `Ω`), 49 key codes, 25 entity marks, empty value-code tables. Digest `88d05d0839c1…`, carried in every message header. |
+| `RULE-SHEET.md` | The short sheet a model is given to read and write IML: 1,607 tokens under cl100k_base. |
+| `registry/iml-registry-0.2.json` | The registry derived from the canon: 87 verb roots and `Ω` for OUT, 49 key codes, 25 entity marks, empty value-code tables. Digest `88d05d0839c1…`, carried in every message header. |
 | `canon/` | The four canon files at commit 127ba56 that the registry is derived from, with `canon/PIN` (commit and sha256 of each file). |
 | `tools/derive_registry.py` | Derives the registry from `canon/` and, with `--check`, verifies the committed file reproduces it. |
 | `iml/` | The reference codec, standard library only: `python -m iml compile`, `decompile`, `roundtrip`, `check-registry`. |
-| `corpus/` | 72 golden chains with their expected IML; 76 malformed inputs with their expected error codes. |
-| `tests/` | `python -m unittest discover -s tests`: 40 tests, including 10,000 generated chains under the round-trip law and a 500-chain sample checked by the canon validator. |
+| `corpus/` | 72 golden chains with their expected IML; 91 malformed inputs with their expected error codes. |
+| `tests/` | `python -m unittest discover -s tests`: 45 tests, including 10,000 generated chains under the round-trip law and a 500-chain sample checked by the canon validator. |
 | `tools/measure.py`, `measurements/` | Bytes, characters, cl100k_base and o200k_base tokens for the I-Lang canonical print, the IML message and a JSON baseline, on the golden corpus. |
 | `drafts/IML-draft-0.1.md` | The first draft, filed 2026-09-12, kept unchanged below its banner. Reviewed 2026-09-18; the banner records what did not hold. |
 | `ROADMAP.md` | The scope of 0.2, what is deferred to 0.3, what belongs to the envelope, the gates for 1.0, and the rule for any efficiency claim. |
@@ -70,15 +70,15 @@ The codec fails closed: an unknown verb, key, entity mark or value code, a missi
 
 ## What 0.2 measured
 
-On the 72-chain golden corpus (`measurements/0.2-2026-09-18.md`, tiktoken 0.14.0, named encodings and not any vendor's billing):
+On the 72-chain golden corpus (`measurements/0.2-2026-09-18.md`, regenerated for 0.2.1; tiktoken 0.14.0, named encodings and not any vendor's billing):
 
 | form | bytes | chars | cl100k_base | o200k_base |
 |------|---:|---:|---:|---:|
-| I-Lang canonical print | 4464 | 4397 | 2040 | 2134 |
+| I-Lang canonical print | 4462 | 4395 | 2040 | 2134 |
 | IML message | 4964 | 4504 | 2761 | 2606 |
 | JSON baseline | 8334 | 8330 | 3195 | 3262 |
 
-IML is longer than the I-Lang canonical print in every unit on this corpus: each message carries a 23-character header, and `Φ`, `Ω` and `→` are multibyte and tokenize poorly. The rule sheet costs 1,350 cl100k_base tokens on top. That is the measurement; no saving is claimed, and the efficiency gate in ROADMAP.md stands unchanged.
+IML is longer than the I-Lang canonical print in every unit on this corpus: each message carries a 21-character header and one space, and `Φ`, `Ω` and `→` are multibyte and tokenize poorly. The rule sheet costs 1,607 cl100k_base tokens on top. The reply is not measured: the codec makes no model calls. That is the measurement; no saving is claimed, and the efficiency gate in ROADMAP.md stands unchanged.
 
 ## Naming
 
@@ -90,3 +90,4 @@ Write `IML (I-Lang Machine Layer)` on first mention. IML is a representation lay
 |---------|-------|
 | 0.1 | Archived draft, filed 2026-09-12. Not implemented. |
 | 0.2 | Released 2026-09-18 as v0.2.0: specification, registry, reference codec, corpora, measurement. |
+| 0.2.1 | Released 2026-09-18 as v0.2.1, a fix release: `.gitattributes` pins LF; the I-Lang bare-value character set, the header shape and raw control characters inside quotes are fixed in the codec and stated in the specification (§12 lists the sections); 15 malformed cases added; measurement regenerated. Message form and registry unchanged. |
