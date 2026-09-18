@@ -1,9 +1,13 @@
-"""Load registry/iml-registry-0.2.json and verify its digest (design 0.2 section 1).
+"""Load registry/iml-registry-0.2.json and verify its digest (SPEC-IML-0.3.md section 1).
 
 The registry is derived from the I-Lang canon by tools/derive_registry.py. Loading it
 recomputes the digest (sha256 of the JSON without the `digest` member, keys sorted,
 separators `,` and `:`, ensure_ascii False) and refuses a file whose digest does not
-match. Every message header carries the first 12 hex characters of that digest.
+match. Every header carries the first 12 hex characters of that digest.
+
+The registry is the one derived for 0.2 and is unchanged in 0.3: its `iml_version`
+member (0.2) names the vocabulary, and the digest 88d05d0839c1... stays. The version in
+a header is the surface version, HEADER_VERSION below, which the codec owns.
 """
 
 import hashlib
@@ -12,6 +16,7 @@ from pathlib import Path
 
 DEFAULT_PATH = Path(__file__).resolve().parents[1] / "registry" / "iml-registry-0.2.json"
 HEADER_PREFIX = "#iml/"
+HEADER_VERSION = "0.3"   # the surface written by compile; 0.2 is read only (codec.SURFACES)
 
 
 class RegistryError(Exception):
@@ -48,7 +53,16 @@ class Registry:
         self.mark_entity = {e["mark"]: e["name"] for e in obj["entities"]}
         self.entity_tier = {e["name"]: e["tier"] for e in obj["entities"]}
         self.value_codes = {k: dict(v) for k, v in obj["value_codes"].items()}
-        self.header = HEADER_PREFIX + self.version + "/" + self.digest[:12]
+
+    def header_for(self, version):
+        """`#iml/<version>/<12 hex>`: the header of the given surface version over this
+        registry's digest."""
+        return HEADER_PREFIX + version + "/" + self.digest[:12]
+
+    @property
+    def header(self):
+        """The header compile writes: the current surface version (HEADER_VERSION)."""
+        return self.header_for(HEADER_VERSION)
 
     def is_verb(self, name):
         return name in self.verbs

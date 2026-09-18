@@ -22,7 +22,19 @@ Scope, and nothing beyond it:
 12. A golden corpus and a malformed corpus, disjoint from any prompt material used for evaluation.
 13. Measurement reported per tokenizer, in bytes, characters and tokens, including the rule sheet and the reply (the reply is not measured in 0.2: the codec makes no model calls).
 
-## Deferred to 0.3
+## 0.3, ASCII surface and document-level header
+
+Released 2026-09-18 as v0.3.0. A change of the surface only, made after the 0.2 measurement (item 13 above): on the 72-chain golden corpus the 0.2 message cost 2,761 cl100k_base tokens against 2,040 for the I-Lang canonical print, because every message paid a 17-token header and because `Φ`, `Ω` and `→` are multibyte marks that tokenize into two or three tokens each.
+
+Scope, and nothing beyond it:
+
+1. The three marks become one ASCII character each: `Φ` to `@`, `Ω` to `$`, `→` to one space. `$` at the start of a value is reserved (E303); such a value is written quoted.
+2. The header `#iml/0.3/<12 hex>` may stand once at the head of a document, followed by one chain per line, as well as once on a message line. Both forms decompile; the form is decided by the first line. A blank line, a trailing space or a second header inside a document is an error.
+3. The 0.2 surface is read only, behind `--version 0.2`, for the corpora already published; the codec writes 0.3 only. A header of the other version is E502 in both directions.
+4. Everything else is unchanged: the registry and its digest `88d05d0839c1`, the AST, the value rules, the canonical print, the round-trip law, the six error codes, the subset.
+5. Measured before and after on the same corpus and encodings (`measurements/0.3-2026-09-18.md`): 0.3 message 2,438 cl100k_base tokens with one header per chain, 0.3 document 1,315 with one header for the 72 chains, I-Lang canonical print 2,040, JSON baseline 3,195; the rule sheet 1,792. The figures are the figures; the efficiency gate below is unchanged and not met.
+
+## Deferred to 0.4
 
 Conditionals, loops, parallel groups and DAGs; error handling and retry; MCP and A2A adapters. Before any of these enters a draft, three definitions must exist: the loop body and its termination; the source of truth for a condition (I-Lang `EVAL` returns a map, not a boolean); and the meaning of Ω inside a branch.
 
@@ -52,3 +64,4 @@ Serialising OpenAPI schemas; variable-length verb coding; outreach to transport 
 | 2026-09-18 | 0.2 released as v0.2.0: specification, registry derived from ilang-spec 127ba56, reference codec, 72 golden and 76 malformed cases, measurement report. On the golden corpus IML is longer than the I-Lang canonical print in bytes, characters and tokens. |
 | 2026-09-18 | 0.2.1 released as v0.2.1, a fix release after an adversarial review of a clean clone: `.gitattributes` pins LF so a Windows clone keeps the canon sha256; the I-Lang bare-value character set, the header shape and raw control characters inside quotes are fixed in the codec and stated in the specification; 15 malformed cases added; the measurement regenerated. The message form and the registry are unchanged (digest `88d05d0839c1`). |
 | 2026-09-18 | 0.2.2 released as v0.2.2: citation metadata for the Zenodo archive; no other change. |
+| 2026-09-18 | 0.3.0 released as v0.3.0: ASCII surface (`@`, `$`, one space) and the document form with one header for many chains; `SPEC-IML-0.3.md`, the 0.3 rule sheet, `corpus/golden-0.3/`, 41 malformed cases added, the 0.2 surface read behind `--version 0.2`, measurement before and after. On the golden corpus the 0.3 message is 2,438 cl100k_base tokens (0.2: 2,761; I-Lang print: 2,040) and the 0.3 document 1,315. The registry and its digest are unchanged. |

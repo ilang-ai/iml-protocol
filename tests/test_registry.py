@@ -12,7 +12,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from iml.registry import DEFAULT_PATH, RegistryError, compute_digest, load_registry  # noqa: E402
+from iml import __version__  # noqa: E402
+from iml.registry import DEFAULT_PATH, HEADER_VERSION, RegistryError, compute_digest, load_registry  # noqa: E402
 
 EXPECTED_ALIASES = {
     "Σ": "MERGE", "Δ": "DIFF", "φ": "FILT", "∇": "SORT", "λ": "MAP", "∂": "SPLIT", "μ": "STAT",
@@ -57,8 +58,16 @@ class TestRegistryContent(unittest.TestCase):
     def test_digest(self):
         self.assertEqual(len(self.obj["digest"]), 64)
         self.assertEqual(compute_digest(self.obj), self.obj["digest"])
-        self.assertEqual(self.reg.header, "#iml/0.2/" + self.obj["digest"][:12])
+        self.assertEqual(self.obj["digest"][:12], "88d05d0839c1")
+        # the registry is the 0.2 one, unchanged in 0.3: its own version stays 0.2; the
+        # header carries the surface version, 0.3 for what compile writes
         self.assertEqual(self.reg.version, "0.2")
+        self.assertEqual(self.obj["iml_version"], "0.2")
+        self.assertEqual(HEADER_VERSION, "0.3")
+        self.assertEqual(HEADER_VERSION, __version__.rsplit(".", 1)[0])
+        self.assertEqual(self.reg.header, "#iml/0.3/" + self.obj["digest"][:12])
+        self.assertEqual(self.reg.header_for("0.3"), self.reg.header)
+        self.assertEqual(self.reg.header_for("0.2"), "#iml/0.2/" + self.obj["digest"][:12])
 
     def test_canon_pin(self):
         self.assertEqual(self.obj["canon"]["commit"], CANON_COMMIT)

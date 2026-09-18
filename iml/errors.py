@@ -1,4 +1,4 @@
-"""IML codec errors. Codes reuse SPEC.md section 9 (design 0.2 section 7).
+"""IML codec errors. Codes reuse SPEC.md section 9 (SPEC-IML-0.3.md section 7, unchanged since 0.2).
 
 The codec fails closed: the first error stops it. An error carries the code, a message,
 the 0-based character offset into the input where it was detected (None when there is

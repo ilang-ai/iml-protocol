@@ -1,26 +1,37 @@
-"""Command line: python -m iml <command> [FILE]
+"""Command line: python -m iml <command> [option] [FILE]
 
-  compile [FILE]          read I-Lang chains (one per line) and print one IML message per line
-  decompile [FILE]        read IML messages (one per line) and print canonical I-Lang per line
+  compile [--document] [FILE]
+                          read I-Lang chains (one per line) and print one IML 0.3 message
+                          per line; with --document, print one document: the header alone
+                          on the first line, then one chain per line
+  decompile [--version V] [FILE]
+                          read IML and print canonical I-Lang, one line per chain. The
+                          form is decided by the first line: a header alone opens a
+                          document, and every following line is one chain; a header
+                          followed by a chain is a message, and every non-empty line is
+                          then one message. V is 0.3 (default) or 0.2 (the 0.2 surface,
+                          read only: one message per line)
   roundtrip FILE          for every I-Lang line: parse -> compile -> decompile -> compare;
-                          print the IML and the canonical I-Lang; exit 1 on any failure
+                          print the IML message and the canonical I-Lang; then the same
+                          for the document of all lines; exit 1 on any failure
   check-registry [PATH]   load the registry, verify its digest, print the counts
 
-FILE `-` or no FILE reads standard input. Input is UTF-8; a trailing CR is dropped from
-every line; blank lines are skipped. The codec fails closed: the first error stops the
+FILE `-` or no FILE reads standard input. Input is UTF-8; `\\r\\n` is accepted as a line
+end. Blank lines are skipped in I-Lang input and in a stream of messages; inside a
+document a blank line is an error. The codec fails closed: the first error stops the
 command with exit code 1 and `<file>:<line>: <error>` on standard error.
 """
 
 import sys
 
 from . import __version__
-from .codec import compile, decompile
+from .codec import DEFAULT_VERSION, VERSIONS, compile, compile_document, decompile, is_document
 from .errors import IMLError
 from .l2 import parse_L2, print_L2
 from .registry import RegistryError, default_registry, load_registry
 
 
-def read_lines(path):
+def read_text(path):
     if path is None or path == "-":
         data = sys.stdin.buffer.read().decode("utf-8")
         name = "<stdin>"
@@ -28,40 +39,73 @@ def read_lines(path):
         with open(path, "rb") as f:
             data = f.read().decode("utf-8")
         name = path
+    return name, data
+
+
+def non_empty_lines(data):
+    """(line number, line) for every non-empty line; a trailing CR is dropped."""
     out = []
     for no, line in enumerate(data.split("\n"), start=1):
         if line.endswith("\r"):
             line = line[:-1]
         if line:
             out.append((no, line))
-    return name, out
+    return out
 
 
-def cmd_compile(path):
-    name, lines = read_lines(path)
+def report(name, no, err):
+    print("%s:%d: %s" % (name, no, err), file=sys.stderr)
+
+
+def cmd_compile(path, document):
+    name, data = read_text(path)
+    lines = non_empty_lines(data)
+    if not document:
+        for no, line in lines:
+            try:
+                print(compile(parse_L2(line)))
+            except IMLError as e:
+                report(name, no, e)
+                return 1
+        return 0
+    asts = []
     for no, line in lines:
         try:
-            print(compile(parse_L2(line)))
+            asts.append(parse_L2(line))
         except IMLError as e:
-            print("%s:%d: %s" % (name, no, e), file=sys.stderr)
+            report(name, no, e)
             return 1
+    if asts:
+        print(compile_document(asts))
     return 0
 
 
-def cmd_decompile(path):
-    name, lines = read_lines(path)
-    for no, line in lines:
+def cmd_decompile(path, version):
+    name, data = read_text(path)
+    if version == DEFAULT_VERSION and is_document(data):
         try:
-            print(print_L2(decompile(line)))
+            chains = decompile(data)
         except IMLError as e:
-            print("%s:%d: %s" % (name, no, e), file=sys.stderr)
+            no = data.count("\n", 0, e.offset) + 1 if e.offset is not None else 1
+            report(name, no, e)
+            return 1
+        for chain in chains:
+            print(print_L2(chain))
+        return 0
+    for no, line in non_empty_lines(data):
+        try:
+            print(print_L2(decompile(line, version=version)))
+        except IMLError as e:
+            report(name, no, e)
             return 1
     return 0
 
 
 def cmd_roundtrip(path):
-    name, lines = read_lines(path)
+    name, data = read_text(path)
+    lines = non_empty_lines(data)
     failed = 0
+    asts = []
     for no, line in lines:
         try:
             ast = parse_L2(line)
@@ -71,11 +115,24 @@ def cmd_roundtrip(path):
             ok = (back == ast and print_L2(back) == canon and compile(back) == message
                   and print_L2(parse_L2(canon)) == canon)
         except IMLError as e:
-            print("%s:%d: %s" % (name, no, e), file=sys.stderr)
+            report(name, no, e)
             return 1
         print("%s:%d %s" % (name, no, "OK" if ok else "FAIL"))
         print("  I-Lang  " + canon)
         print("  IML     " + message)
+        if not ok:
+            failed += 1
+        asts.append(ast)
+    if asts:
+        try:
+            document = compile_document(asts)
+            back = decompile(document)
+            ok = back == asts and compile_document(back) == document
+        except IMLError as e:
+            report(name, 0, e)
+            return 1
+        print("document %s (%d chains under one header, %d lines)"
+              % ("OK" if ok else "FAIL", len(asts), document.count("\n") + 1))
         if not ok:
             failed += 1
     print("%d chain(s), %d failure(s)" % (len(lines), failed))
@@ -90,13 +147,38 @@ def cmd_check_registry(path):
         return 1
     roots = sum(1 for v in reg.verbs if v in reg.verb_root)
     print("registry %s" % (reg.path or "<default>"))
-    print("iml_version %s" % reg.version)
+    print("registry version %s (the vocabulary of 0.2, unchanged in 0.3)" % reg.version)
     print("canon commit %s" % reg.commit)
     print("verbs %d (roots %d, OUT has none), aliases %d, keys %d, entities %d"
           % (len(reg.verbs), roots, len(reg.aliases), len(reg.keys), len(reg.entities)))
     print("digest %s" % reg.digest)
     print("header %s" % reg.header)
+    for v in VERSIONS:
+        if v != DEFAULT_VERSION:
+            print("header %s (read only)" % reg.header_for(v))
     return 0
+
+
+def parse_args(cmd, rest):
+    """Return (file, document, version) or an error message."""
+    document = False
+    version = DEFAULT_VERSION
+    arg = None
+    it = iter(rest)
+    for a in it:
+        if a == "--document" and cmd == "compile":
+            document = True
+        elif a == "--version" and cmd == "decompile":
+            version = next(it, None)
+            if version not in VERSIONS:
+                return "--version takes one of %s" % ", ".join(VERSIONS)
+        elif a.startswith("-") and a != "-":
+            return "unknown option %r for %s" % (a, cmd)
+        elif arg is None:
+            arg = a
+        else:
+            return "too many arguments"
+    return arg, document, version
 
 
 def main(argv=None):
@@ -113,31 +195,32 @@ def main(argv=None):
     if cmd == "--version":
         print("iml %s" % __version__)
         return 0
-    if len(rest) > 1:
-        print("too many arguments", file=sys.stderr)
+    if cmd not in ("compile", "decompile", "roundtrip", "check-registry"):
+        print("unknown command %r" % cmd, file=sys.stderr)
+        print(__doc__.strip(), file=sys.stderr)
         return 2
-    arg = rest[0] if rest else None
+    parsed = parse_args(cmd, rest)
+    if isinstance(parsed, str):
+        print(parsed, file=sys.stderr)
+        return 2
+    arg, document, version = parsed
     try:
         if cmd == "compile":
-            return cmd_compile(arg)
+            return cmd_compile(arg, document)
         if cmd == "decompile":
-            return cmd_decompile(arg)
+            return cmd_decompile(arg, version)
         if cmd == "roundtrip":
             if arg is None:
                 print("roundtrip needs a FILE", file=sys.stderr)
                 return 2
             return cmd_roundtrip(arg)
-        if cmd == "check-registry":
-            return cmd_check_registry(arg)
+        return cmd_check_registry(arg)
     except RegistryError as e:
         print("registry: %s" % e, file=sys.stderr)
         return 1
     except OSError as e:
         print("cannot read input: %s" % e, file=sys.stderr)
         return 1
-    print("unknown command %r" % cmd, file=sys.stderr)
-    print(__doc__.strip(), file=sys.stderr)
-    return 2
 
 
 if __name__ == "__main__":

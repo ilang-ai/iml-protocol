@@ -9,8 +9,12 @@ abstract: >-
   segmentation rule, the message header, the canonical I-Lang print, the
   round-trip law at the AST level, and six error codes taken from the I-Lang
   specification, and ships a reference codec, golden and malformed corpora and
-  a measurement report. IML registers no verb, modifier key, entity or
-  declaration of its own and is not part of the I-Lang canon.
+  a measurement report. Version 0.3 changes the surface only: ASCII marks
+  (@ for a target or an entity reference, $ for OUT, one space between
+  operations) and a document form that carries one header for many chains;
+  the registry, the AST, the round-trip law and the error codes are unchanged.
+  IML registers no verb, modifier key, entity or declaration of its own and is
+  not part of the I-Lang canon.
 type: software
 authors:
   - given-names: "Long Quan"
@@ -21,7 +25,7 @@ authors:
 repository-code: "https://github.com/ilang-ai/iml-protocol"
 url: "https://github.com/ilang-ai/iml-protocol"
 license: MIT
-version: "0.2.2"
+version: "0.3.0"
 date-released: 2026-09-18
 keywords:
   - I-Lang

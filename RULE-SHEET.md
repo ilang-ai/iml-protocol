@@ -1,64 +1,75 @@
-# IML (I-Lang Machine Layer) 0.2 rule sheet
+# IML (I-Lang Machine Layer) 0.3 rule sheet
 
-IML is a one-line spelling of one I-Lang operation chain. This sheet is enough to turn an IML message back into I-Lang and an I-Lang chain into IML. Every verb root, key code and entity mark comes from `registry/iml-registry-0.2.json`. Use the file, never a guess. The full rules are in `SPEC-IML-0.2.md`.
+IML is a machine spelling of I-Lang operation chains. This sheet is enough to turn IML 0.3 into I-Lang and an I-Lang chain into IML 0.3. Every verb root, key code and entity mark comes from `registry/iml-registry-0.2.json` (unchanged in 0.3; digest prefix `88d05d0839c1`). Use the file, never a guess. The full rules are in `SPEC-IML-0.3.md`.
 
-## 1. Message shape
+## 1. Two shapes
 
-`#iml/0.2/<12 lowercase hex> <chain>`: header, one space, chain. The hex is the registry digest prefix. The chain is ops joined by `→` (U+2192). No other whitespace anywhere.
+Message, one line: `#iml/0.3/<12 lowercase hex> <chain>`: header, one space, chain.
+
+Document: the header alone on the first line, then one chain per line. No blank line, no trailing space, no second header. Lines end with `\n` (`\r\n` accepted).
+
+The hex is the registry digest prefix. A chain is ops separated by exactly one space. A `#iml/0.2/` header is the old surface (`Φ`, `Ω`, `→`): report E502.
 
 ## 2. Reading an op (IML to I-Lang)
 
 Look at the first character of the op.
 
-- `Ω` (U+03A9): the verb OUT. It may carry modifiers and must be the last op.
+- `$`: the verb OUT. It may carry modifiers and must be the last op.
 - Otherwise the first two characters, each `A-Z` or `0-9`, are the verb root. Registry: root to verb name.
 
-Then, if the next character is `Φ` (U+03A6), a target follows: `Φ` plus two characters `A-Z` or `0-9` is a registered entity mark (registry: mark to `@NAME`); `Φ{NAME}` is the custom entity `@NAME`.
+Then, if the next character is `@`, a target follows: `@` plus two characters `A-Z` or `0-9` is a registered entity mark (registry: mark to `@NAME`); `@{NAME}` is the custom entity `@NAME`.
 
-Then modifiers, if any: `kk=value` pairs separated by `,`. A key is exactly two lowercase letters (registry: code to key name). A value runs to the next `,` or `→` outside quotes, or to the end of the message.
+Then modifiers, if any: `kk=value` pairs separated by `,`. A key is exactly two lowercase letters (registry: code to key name). A value runs to the next `,` or space outside quotes, or to the end of the line.
 
 Value kinds, by first character:
 
-- `"`: quoted string, escapes `\"` `\\` `\n`; the content is the unescaped text. A raw control character (U+0000 to U+001F, U+007F, U+2028, U+2029) inside the quotes is E300; a newline is only ever written `\n`.
-- `Φ`: entity reference, same two forms as a target; it becomes `@NAME`.
-- `~`: value code. 0.2 has no codes: report E303.
-- anything else: bare. Copy the characters exactly (`007` stays `007`, `true` stays `true`).
+- `"`: quoted string, escapes `\"` `\\` `\n`; the content is the unescaped text and may hold spaces and commas. A raw control character (U+0000 to U+001F, U+007F, U+2028, U+2029) inside quotes is E300; a newline is written `\n`.
+- `@`: entity reference, same two forms as a target; it becomes `@NAME`.
+- `~`: value code. 0.3 has no codes: report E303.
+- `$`: reserved at the start of a value: report E303.
+- anything else: bare. Copy the characters exactly (`007` stays `007`, `true` stays `true`). After the first character `$` `@` `~` `=` `>` `#` `{` `}` and `Φ` `Ω` `→` are content.
 
 ## 3. Writing I-Lang (canonical print)
 
-`[VERB:@TARGET|k=v,k=v]=>[VERB|k=v]=>[Ω]`. Verb by canon name. OUT as `[Ω]` or `[Ω|k=v]`. No target: omit `:@TARGET`. No modifiers: omit `|` and the list. Ops joined by `=>`. A value prints bare unless it is empty, contains whitespace or one of `, | ] [ " \`, or starts with `@`; then quote it with the escapes above. `=` and `>` are content: `whr=score>80` prints bare. An entity reference prints `@NAME`. No whitespace anywhere.
+`[VERB:@TARGET|k=v,k=v]=>[VERB|k=v]=>[Ω]`. Verb by canon name. OUT as `[Ω]` or `[Ω|k=v]`. No target: omit `:@TARGET`. No modifiers: omit `|` and the list. Ops joined by `=>`. A value prints bare unless it is empty, contains whitespace or one of `, | ] [ " \`, or starts with `@`; then quote it with the escapes above. `=` and `>` are content: `whr=score>80` prints bare. An entity reference prints `@NAME`. No whitespace anywhere. A document prints one line per chain, in order.
 
 ## 4. Writing IML (I-Lang to IML)
 
-Input: `[VERB(:@TARGET)?(|k=v,k=v)?]` joined by `=>`, one chain, no whitespace before or after it. A bare value runs to the next `,` `|` or `]`; inside it `[` `"` `\` are E303 and whitespace is E300, `=` and `>` are content. Modifiers are separated by `,`; a `|` after a value is a stray character (E300). Aliases mean their verb: Σ MERGE, Δ DIFF, φ FILT, ∇ SORT, λ MAP, ∂ SPLIT, μ STAT, ψ SENT, ξ HASH, ζ CMPR, θ XLAT, Ω OUT, Π BATC.
+Input: `[VERB(:@TARGET)?(|k=v,k=v)?]` joined by `=>`, one chain per line, no whitespace before or after it. A bare value runs to the next `,` `|` or `]`; `=` and `>` are content. Aliases mean their verb: Σ MERGE, Δ DIFF, φ FILT, ∇ SORT, λ MAP, ∂ SPLIT, μ STAT, ψ SENT, ξ HASH, ζ CMPR, θ XLAT, Ω OUT, Π BATC.
 
-- Verb, or its alias, to the root from the registry. `[OUT]` and `[Ω]` both become `Ω`, with no target.
-- `@TARGET`: registered, `Φ` plus its mark; custom, `Φ{NAME}`. The name must match `[A-Z][A-Z0-9_]*`.
+- Verb, or its alias, to the root from the registry. `[OUT]` and `[Ω]` both become `$`, with no target.
+- `@TARGET`: registered, `@` plus its mark; custom, `@{NAME}`. The name must match `[A-Z][A-Z0-9_]*`.
 - Key to its code from the registry. Keys keep their order, separated by `,`.
-- Value: a bare `@NAME` is an entity reference, written `Φ` plus mark or `Φ{NAME}`. Otherwise take the content (unescape a quoted string) and write it bare if it is not empty, contains none of `,` `→` `"` `\` whitespace, and does not start with `~` `Φ` `"`; otherwise quote it with the escapes. Never change the characters.
-- Header from the registry. Ops joined by `→`. Nothing else in the message.
+- Value: a bare `@NAME` is an entity reference, written `@` plus mark or `@{NAME}`. Otherwise take the content (unescape a quoted string) and write it bare if it is not empty, contains none of `,` `"` `\` whitespace, and does not start with `~` `@` `$` `"`; otherwise quote it with the escapes. Never change the characters.
+- Header from the registry. Ops joined by one space. Nothing else on the line. Document: the header alone on the first line, then each chain on its own line, in order.
 
 ## 5. Outside the subset
 
-Report E502 and stop: a `::` declaration, `T[...]`, `PARALLEL{}` or `||`, a conditional, a loop, a comment, a verb in the target slot (`[Π:READ]`), OUT with a target, `Ω` before the last op, a second chain, anything after the chain, a message without a `#iml/` header, a well-shaped header with another version or another digest.
+Report E502 and stop: a `::` declaration, `T[...]`, `PARALLEL{}` or `||`, a conditional, a loop, a comment, a verb in the target slot (`[Π:READ]`), OUT with a target, `$` before the last op, a second chain on one I-Lang line, anything after the chain, a message without a `#iml/` header, a well-shaped header with another version (`0.2` included) or another digest, a second header in a document.
 
 ## 6. On error
 
-Stop at the first error. A raw control character anywhere in a value is E300. Report the code and the 0-based character offset (when compiling, also the op index). Never guess a root, key, mark or verb. Never repair, reorder or drop a value.
+Stop at the first error. Report the code and the 0-based character offset (when compiling, also the op index). Never guess a root, key, mark or verb. Never repair, reorder or drop a value.
 
-- E300 syntax: bad header shape (`#iml/` followed by anything but `<digits>.<digits>/<12 lowercase hex>` and one space, judged before the version and the digest), unterminated quote, bad escape, raw control character inside quotes, empty value, stray character (a `|` between modifiers included), missing `=`, whitespace in a bare value or before or after the chain, a dangling `=>`.
+- E300 syntax: bad header shape (judged before the version and the digest), unterminated quote, bad escape, raw control character in a value, empty value, stray character (a `|` between modifiers, a tab, `Φ` `Ω` `→` in a syntax position), missing `=`, whitespace in a bare value or around a chain, two spaces between ops, a trailing space, a blank line in a document, a header with no chain, a second line after a message line, a dangling `=>`.
 - E304 unknown root or verb (`OT` included).
 - E302 unknown key code or key.
 - E200 unknown mark, or an entity name that fails `[A-Z][A-Z0-9_]*`.
-- E303 invalid value: a `~code` (no table has an entry in 0.2); `[` `"` `\` inside an I-Lang bare value; `"` `\` inside an IML bare value. A value starting with `~` or `Φ` is read as a code or an entity reference and judged by that rule.
+- E303 invalid value: a `~code`; a value starting with `$`; `[` `"` `\` inside an I-Lang bare value; `"` `\` inside an IML bare value. A value starting with `~` or `@` is read as a code or an entity reference and judged by that rule.
 - E502 outside the subset, as in section 5.
 
 ## 7. Example
 
 I-Lang: `[READ:@GH|path=readme.md]=>[XLAT|lng=zh]=>[FMT|fmt=md]=>[Ω]`
 
-IML: `#iml/0.2/88d05d0839c1 RDΦGHpt=readme.md→XLln=zh→FMfm=md→Ω`
+IML message: `#iml/0.3/88d05d0839c1 RD@GHpt=readme.md XLln=zh FMfm=md $`
 
-The codes here are hand-derived by the registry algorithm; the registry file is authoritative. `88d05d0839c1` is the digest prefix of the registry file at the pin.
+Read back: `RD` READ; `@GH` @GH; `pt=readme.md` path, bare; space; `XL` XLAT; `ln=zh` lng; `FM` FMT; `fm=md` fmt; `$` OUT; end of line. Print: the I-Lang line above.
 
-Read back: `RD` READ; `ΦGH` @GH; `pt=readme.md` path, bare; `→`; `XL` XLAT, no target; `ln=zh` lng; `→`; `FM` FMT; `fm=md` fmt; `→`; `Ω` OUT; end. Print: the I-Lang line above.
+The same chain and `[READ:@MYDATA|src=@PREV,whr="a, b"]=>[Ω|fmt=json]` as one document:
+
+```
+#iml/0.3/88d05d0839c1
+RD@GHpt=readme.md XLln=zh FMfm=md $
+RD@{MYDATA}sr=@PR,wh="a, b" $fm=json
+```

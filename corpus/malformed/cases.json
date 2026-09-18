@@ -279,259 +279,302 @@
   "input": "RDΦGH",
   "direction": "decompile",
   "expect": "E502",
-  "label": "no header"
+  "label": "no header",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.1/88d05d0839c1 RD",
   "direction": "decompile",
   "expect": "E502",
-  "label": "wrong version"
+  "label": "wrong version",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/000000000000 RD",
   "direction": "decompile",
   "expect": "E502",
-  "label": "digest mismatch"
+  "label": "digest mismatch",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1RD",
   "direction": "decompile",
   "expect": "E300",
-  "label": "no space after the header"
+  "label": "no space after the header",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88D05D0839C1 RD",
   "direction": "decompile",
   "expect": "E300",
-  "label": "upper-case hex in the header"
+  "label": "upper-case hex in the header",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839 RD",
   "direction": "decompile",
   "expect": "E300",
-  "label": "short digest prefix"
+  "label": "short digest prefix",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 ",
   "direction": "decompile",
   "expect": "E300",
-  "label": "empty chain"
+  "label": "empty chain",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 OT",
   "direction": "decompile",
   "expect": "E304",
-  "label": "OT is not a root"
+  "label": "OT is not a root",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 ZZ",
   "direction": "decompile",
   "expect": "E304",
-  "label": "unknown root"
+  "label": "unknown root",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 RDpt=x→OT",
   "direction": "decompile",
   "expect": "E304",
-  "label": "OT after an arrow"
+  "label": "OT after an arrow",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 rd",
   "direction": "decompile",
   "expect": "E300",
-  "label": "lower-case root"
+  "label": "lower-case root",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 RDΦZZ",
   "direction": "decompile",
   "expect": "E200",
-  "label": "unknown mark"
+  "label": "unknown mark",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 RDΦ{bad}",
   "direction": "decompile",
   "expect": "E200",
-  "label": "custom entity name in lower case"
+  "label": "custom entity name in lower case",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 RDΦ{PREV}",
   "direction": "decompile",
   "expect": "E200",
-  "label": "registered entity written as custom"
+  "label": "registered entity written as custom",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 RDsr=Φ{}",
   "direction": "decompile",
   "expect": "E200",
-  "label": "empty custom entity name in value position"
+  "label": "empty custom entity name in value position",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 RDzz=x",
   "direction": "decompile",
   "expect": "E302",
-  "label": "unknown key code"
+  "label": "unknown key code",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 RDpt",
   "direction": "decompile",
   "expect": "E300",
-  "label": "key code without ="
+  "label": "key code without =",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 RDpt=",
   "direction": "decompile",
   "expect": "E300",
-  "label": "empty value"
+  "label": "empty value",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 RDpt=~x",
   "direction": "decompile",
   "expect": "E303",
-  "label": "value code not in the (empty) table"
+  "label": "value code not in the (empty) table",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 RDpt=~",
   "direction": "decompile",
   "expect": "E300",
-  "label": "empty value code"
+  "label": "empty value code",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 RDpt=\"a",
   "direction": "decompile",
   "expect": "E300",
-  "label": "unterminated quote"
+  "label": "unterminated quote",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 RDpt=\"a\\q\"",
   "direction": "decompile",
   "expect": "E300",
-  "label": "bad escape"
+  "label": "bad escape",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 RDpt=\"a\"b",
   "direction": "decompile",
   "expect": "E300",
-  "label": "stray character after a quoted value"
+  "label": "stray character after a quoted value",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 RDpt=a\"b",
   "direction": "decompile",
   "expect": "E303",
-  "label": "quote inside a bare value"
+  "label": "quote inside a bare value",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 RDpt=a\\b",
   "direction": "decompile",
   "expect": "E303",
-  "label": "backslash inside a bare value"
+  "label": "backslash inside a bare value",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 RD pt=a",
   "direction": "decompile",
   "expect": "E300",
-  "label": "whitespace inside the chain"
+  "label": "whitespace inside the chain",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 Ω→RD",
   "direction": "decompile",
   "expect": "E502",
-  "label": "Ω not last"
+  "label": "Ω not last",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 ΩΦGH",
   "direction": "decompile",
   "expect": "E300",
-  "label": "Ω with a target"
+  "label": "Ω with a target",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 RD→",
   "direction": "decompile",
   "expect": "E300",
-  "label": "trailing arrow"
+  "label": "trailing arrow",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 →RD",
   "direction": "decompile",
   "expect": "E300",
-  "label": "leading arrow"
+  "label": "leading arrow",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 RDpt=a,",
   "direction": "decompile",
   "expect": "E300",
-  "label": "trailing comma"
+  "label": "trailing comma",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 RDpt=a,,",
   "direction": "decompile",
   "expect": "E300",
-  "label": "double comma"
+  "label": "double comma",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 RDΦGHPT=a",
   "direction": "decompile",
   "expect": "E300",
-  "label": "upper-case key code"
+  "label": "upper-case key code",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 RDsr=ΦG",
   "direction": "decompile",
   "expect": "E300",
-  "label": "one-character mark"
+  "label": "one-character mark",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 RDΦ{GH",
   "direction": "decompile",
   "expect": "E300",
-  "label": "unterminated custom entity"
+  "label": "unterminated custom entity",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 RD=>FM",
   "direction": "decompile",
   "expect": "E300",
-  "label": "I-Lang pipe operator inside IML"
+  "label": "I-Lang pipe operator inside IML",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 RD\n",
   "direction": "decompile",
   "expect": "E300",
-  "label": "newline inside the message"
+  "label": "newline inside the message",
+  "version": "0.2"
  },
  {
   "input": "#iml/2/88d05d0839c1 RD",
   "direction": "decompile",
   "expect": "E300",
-  "label": "version without a dot"
+  "label": "version without a dot",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1  RD",
   "direction": "decompile",
   "expect": "E300",
-  "label": "two spaces after the header"
+  "label": "two spaces after the header",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.1/88D05D0839C1 RD",
   "direction": "decompile",
   "expect": "E300",
-  "label": "bad shape is reported before the wrong version"
+  "label": "bad shape is reported before the wrong version",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1",
   "direction": "decompile",
   "expect": "E300",
-  "label": "header alone, no space and no chain"
+  "label": "header alone, no space and no chain",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 RDpt=\"a\tb\"",
   "direction": "decompile",
   "expect": "E300",
-  "label": "raw tab inside a quoted value"
+  "label": "raw tab inside a quoted value",
+  "version": "0.2"
  },
  {
   "input": "#iml/0.2/88d05d0839c1 RDpt=\"a b\"",
   "direction": "decompile",
   "expect": "E300",
-  "label": "raw U+2029 inside a quoted value"
+  "label": "raw U+2029 inside a quoted value",
+  "version": "0.2"
  },
  {
   "input": "[READ:@SRC|path=a\u0001b]=>[Ω]",
@@ -543,6 +586,294 @@
   "input": "#iml/0.2/88d05d0839c1 RDΦSRpt=ab→Ω",
   "direction": "decompile",
   "expect": "E300",
-  "label": "raw control character U+007F inside a bare value"
+  "label": "raw control character U+007F inside a bare value",
+  "version": "0.2"
+ },
+ {
+  "input": "#iml/0.2/88d05d0839c1 RD",
+  "direction": "decompile",
+  "expect": "E502",
+  "version": "0.3",
+  "label": "0.2 header read by the 0.3 decoder (version mismatch)"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1 RD",
+  "direction": "decompile",
+  "expect": "E502",
+  "version": "0.2",
+  "label": "0.3 header read by the 0.2 decoder (version mismatch)"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1\nRD\n\nXL",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.3",
+  "label": "blank line inside a document"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1\n\nRD",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.3",
+  "label": "blank line right after the header"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1\nRD\n\n",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.3",
+  "label": "blank line at the end of a document"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1\nRD\n#iml/0.3/88d05d0839c1\nXL",
+  "direction": "decompile",
+  "expect": "E502",
+  "version": "0.3",
+  "label": "second header inside a document"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1 RDpt=$x",
+  "direction": "decompile",
+  "expect": "E303",
+  "version": "0.3",
+  "label": "bare value starting with $"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1 RD ",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.3",
+  "label": "trailing space after a message"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1\nRD \nXL",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.3",
+  "label": "trailing space on a document line"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1 RDΦGH",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.3",
+  "label": "0.2 target mark Φ in a 0.3 message"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1 Ω",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.3",
+  "label": "0.2 terminator Ω in a 0.3 message"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1 RD→XL",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.3",
+  "label": "0.2 separator → in a 0.3 message"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1 RD→Ω",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.3",
+  "label": "0.2 chain tail in a 0.3 message"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1 RD  XL",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.3",
+  "label": "two spaces between operations"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1 RD\tXL",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.3",
+  "label": "tab between operations"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1 RD\nXL",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.3",
+  "label": "second line after a message line"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.3",
+  "label": "header alone, no line after it"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1\n",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.3",
+  "label": "document without a chain"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1 $@GH",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.3",
+  "label": "$ with a target"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1 $ RD",
+  "direction": "decompile",
+  "expect": "E502",
+  "version": "0.3",
+  "label": "$ not last"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1 RD@ZZ",
+  "direction": "decompile",
+  "expect": "E200",
+  "version": "0.3",
+  "label": "unknown mark"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1 RD@{PREV}",
+  "direction": "decompile",
+  "expect": "E200",
+  "version": "0.3",
+  "label": "registered entity written as custom"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1 RDpt=a, XL",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.3",
+  "label": "space after the comma"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1 RDpt=~x",
+  "direction": "decompile",
+  "expect": "E303",
+  "version": "0.3",
+  "label": "value code not in the (empty) table"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1 RD pt=a",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.3",
+  "label": "space between the root and the modifiers"
+ },
+ {
+  "input": "RD@GH",
+  "direction": "decompile",
+  "expect": "E502",
+  "version": "0.3",
+  "label": "chain line without a header"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1  RD",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.3",
+  "label": "two spaces after the header"
+ },
+ {
+  "input": "#iml/0.3/88D05D0839C1 RD",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.3",
+  "label": "upper-case hex in the header"
+ },
+ {
+  "input": "#iml/0.3/000000000000 RD",
+  "direction": "decompile",
+  "expect": "E502",
+  "version": "0.3",
+  "label": "digest mismatch"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1\nRD\n#comment",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.3",
+  "label": "comment line inside a document"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1\r\nRD\rXL",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.3",
+  "label": "lone CR inside a document line"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1 RDpt=\"a b",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.3",
+  "label": "unterminated quote holding a space"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1RD",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.3",
+  "label": "no space after the header"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1 RDpt=a b",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.3",
+  "label": "no-break space inside a bare value"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1\n RD",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.3",
+  "label": "leading space on a document line"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1 RDpt=a b",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.3",
+  "label": "space inside a bare value opens a new operation"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1 RD@{GH",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.3",
+  "label": "unterminated custom entity"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1 RDpt=\"a\tb\"",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.3",
+  "label": "raw tab inside a quoted value"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1 RD=>FM",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.3",
+  "label": "I-Lang pipe operator inside a 0.3 message"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1 OT",
+  "direction": "decompile",
+  "expect": "E304",
+  "version": "0.3",
+  "label": "OT is not a root"
+ },
+ {
+  "input": "#iml/0.3/88d05d0839c1 RDzz=x",
+  "direction": "decompile",
+  "expect": "E302",
+  "version": "0.3",
+  "label": "unknown key code"
  }
 ]

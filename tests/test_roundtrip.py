@@ -1,14 +1,18 @@
-"""Round-trip laws (design 0.2 section 6) on the golden corpus and on 10,000 generated
-chains, plus the independent legality oracle: the vendored canon validator run on the
-printed I-Lang of a 500-chain sample (raw mode, opened by the PREAMBLE below).
+"""Round-trip laws (SPEC-IML-0.3.md section 6) on the golden corpus and on 10,000 generated
+chains, on both surfaces (0.3 as written; 0.2 through the internal version argument, as
+the record), plus the document law and the independent legality oracle: the vendored
+canon validator run on the printed I-Lang of a 500-chain sample (raw mode, opened by the
+PREAMBLE below).
 
-Laws checked for every chain x (AST a = parse_L2(x), message m = compile(a)):
-  L1   decompile(m) == a                             (AST fidelity)
-  L2a  print_L2(parse_L2(print_L2(a))) == print_L2(a) (canonical print is idempotent)
-  L2b  compile(decompile(m)) == m                    (codec-produced messages are fixed points)
-  L2c  print_L2(decompile(m)) == print_L2(a)         (canonical text survives the loop)
-The generator is not the oracle: it only has to stay inside the 0.2 subset and inside
-what the canon validator accepts (media profile keys only on @IMG, @VID, @AUD).
+Laws checked for every chain x (AST a = parse_L2(x), message m = compile(a, version)):
+  L1   decompile(m, version) == a                     (AST fidelity)
+  L2a  print_L2(parse_L2(print_L2(a))) == print_L2(a)  (canonical print is idempotent)
+  L2b  compile(decompile(m, version), version) == m   (codec-produced messages are fixed points)
+  L2c  print_L2(decompile(m, version)) == print_L2(a)  (canonical text survives the loop)
+Document law, 0.3 only, for every batch of chains: decompile(compile_document(batch)) ==
+batch and compile_document(decompile(d)) == d.
+The generator is not the oracle: it only has to stay inside the subset and inside what
+the canon validator accepts (media profile keys only on @IMG, @VID, @AUD).
 """
 
 import json
@@ -22,17 +26,18 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from iml import compile, decompile, default_registry, parse_L2, print_L2  # noqa: E402
+from iml import DEFAULT_VERSION, VERSIONS, compile, compile_document, decompile, default_registry, parse_L2, print_L2  # noqa: E402
 from iml.l2 import ilang_bareable  # noqa: E402
 
 SEED = 20260918
 COUNT = 10000
 SAMPLE = 500
+BATCH = 100
 VALIDATOR = ROOT / "canon" / "ilang_grammar_validator.py"
 GOLDEN = ROOT / "corpus" / "golden"
 MEDIA = {"IMG", "VID", "AUD"}
-BARE_ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._/-:*^#~{}@Φ→Ω"
-FREE_ALPHABET = "abcdefghijklmnopqrstuvwxyz 0123456789,|][=>\"\\\n:@~Φ→Ωé中文"
+BARE_ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._/-:*^#~{}@$Φ→Ω"
+FREE_ALPHABET = "abcdefghijklmnopqrstuvwxyz 0123456789,|][=>\"\\\n:@$~Φ→Ωé中文"
 NUMBERS = ["007", "0", "1", "1.0", "-3", "42", "3.14", "1e5", "0.50", "1.00", "2048x1365", "16:9"]
 CUSTOM = ["MYDATA", "HOUSE_LOOK", "X", "A1", "REPORT_2026", "T_", "ZINE_LOOK", "OUT", "READ"]
 
@@ -116,17 +121,23 @@ class Generator:
         return "=>".join(ops)
 
 
-def laws(x):
+def laws(x, version=DEFAULT_VERSION):
     a = parse_L2(x)
-    m = compile(a)
-    back = decompile(m)
+    m = compile(a, version=version)
+    back = decompile(m, version=version)
     canon = print_L2(a)
     return {
         "L1": back == a,
         "L2a": print_L2(parse_L2(canon)) == canon,
-        "L2b": compile(back) == m,
+        "L2b": compile(back, version=version) == m,
         "L2c": print_L2(back) == canon,
     }, canon
+
+
+def document_law(asts):
+    d = compile_document(asts)
+    back = decompile(d)
+    return back == asts and compile_document(back) == d and d.count("\n") == len(asts)
 
 
 def run_validator(lines):
@@ -155,11 +166,14 @@ class TestRoundTripGolden(unittest.TestCase):
     def test_laws_on_golden(self):
         pairs = sorted(GOLDEN.glob("*.ilang"))
         self.assertGreaterEqual(len(pairs), 60)
-        for p in pairs:
-            x = p.read_text(encoding="utf-8").rstrip("\n")
-            with self.subTest(file=p.name):
-                result, _ = laws(x)
-                self.assertTrue(all(result.values()), result)
+        for version in VERSIONS:
+            for p in pairs:
+                x = p.read_text(encoding="utf-8").rstrip("\n")
+                with self.subTest(file=p.name, version=version):
+                    result, _ = laws(x, version)
+                    self.assertTrue(all(result.values()), result)
+        asts = [parse_L2(p.read_text(encoding="utf-8").rstrip("\n")) for p in pairs]
+        self.assertTrue(document_law(asts))
 
     def test_golden_prints_pass_canon_validator(self):
         lines = [print_L2(parse_L2(p.read_text(encoding="utf-8").rstrip("\n")))
@@ -183,22 +197,34 @@ class TestRoundTripRandom(unittest.TestCase):
         self.assertEqual([again.chain() for _ in range(50)], self.chains[:50])
 
     def test_laws_on_10000_chains(self):
-        passed = 0
-        failures = []
         canon = []
-        for i, x in enumerate(self.chains):
-            result, c = laws(x)
-            canon.append(c)
-            if all(result.values()):
-                passed += 1
-            elif len(failures) < 5:
-                failures.append((i, x, result))
-        print("\nrandom chains: %d/%d pass L1, L2a, L2b, L2c (seed %d, python %s)"
-              % (passed, COUNT, SEED, sys.version.split()[0]))
-        self.assertEqual(passed, COUNT, failures)
+        for version in VERSIONS:
+            passed = 0
+            failures = []
+            for i, x in enumerate(self.chains):
+                result, c = laws(x, version)
+                if version == DEFAULT_VERSION:
+                    canon.append(c)
+                if all(result.values()):
+                    passed += 1
+                elif len(failures) < 5:
+                    failures.append((i, x, result))
+            print("\nrandom chains, surface %s: %d/%d pass L1, L2a, L2b, L2c (seed %d, python %s)"
+                  % (version, passed, COUNT, SEED, sys.version.split()[0]))
+            self.assertEqual(passed, COUNT, failures)
         lengths = {len(parse_L2(x).ops) for x in self.chains[:2000]}
         self.assertEqual(lengths, set(range(1, 9)))
         type(self).canon = canon
+
+    def test_document_law_on_10000_chains(self):
+        asts = [parse_L2(x) for x in self.chains]
+        documents = 0
+        for b in range(0, COUNT, BATCH):
+            batch = asts[b:b + BATCH]
+            self.assertTrue(document_law(batch), b)
+            documents += 1
+        print("\ndocument law: %d documents of %d chains pass (one header each)" % (documents, BATCH))
+        self.assertEqual(documents * BATCH, COUNT)
 
     def test_500_sample_passes_canon_validator(self):
         canon = getattr(type(self), "canon", None)

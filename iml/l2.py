@@ -1,5 +1,5 @@
 """Canon I-Lang operation chains: parse_L2 (text -> AST) and print_L2 (AST -> canonical
-text), design 0.2 sections 0 and 5.
+text), SPEC-IML-0.3.md sections 0 and 5 (unchanged since 0.2).
 
 Subset read by parse_L2: one chain on one line, `[VERB(:@TARGET)?(|k=v,k=v)?]` joined
 by `=>`. Verbs are the 88 canon names or the 13 Greek aliases (an alias means its verb).
@@ -17,11 +17,12 @@ values bare when the content is a bareword without whitespace or `,` `|` `]` `[`
 and not starting with `@`, otherwise quoted. No whitespace anywhere.
 """
 
-from .codec import (Chain, Op, Value, RE_NAME, OMEGA, quote, scan_quoted,
+from .codec import (Chain, Op, Value, RE_NAME, quote, scan_quoted,
                     check_no_whitespace, is_control)
 from .errors import IMLError
 from .registry import default_registry
 
+OMEGA = "Ω"                              # the canon alias of OUT (SPEC.md 3.10), printed as [Ω]
 ILANG_RESERVED_IN_BARE = set(',|][ "\\')   # `=` and `>` are content
 ILANG_E303_IN_BARE = ('[', '"', "\\")        # `,` `|` `]` end the value instead
 
@@ -64,7 +65,7 @@ def parse_L2(text, registry=None):
     if text[-1].isspace():
         raise IMLError("E300", "trailing whitespace after the operation chain", len(text) - 1)
     if text[0] != "[":
-        raise IMLError("E502", "outside the 0.2 subset: an operation chain starts with `[` (seen %r)" % text[:12], 0)
+        raise IMLError("E502", "outside the supported subset: an operation chain starts with `[` (seen %r)" % text[:12], 0)
     check_no_whitespace(text)
     n = len(text)
     i = 0
@@ -99,13 +100,13 @@ def parse_L2(text, registry=None):
                 raise IMLError("E300", "empty target after `:`", i, idx)
             if ttext[0] != "@":
                 if verb == "BATC":
-                    raise IMLError("E502", "the [BATC:VERB] / [Π:VERB] form is not supported in 0.2", i, idx)
+                    raise IMLError("E502", "the [BATC:VERB] / [Π:VERB] form is not in the supported subset", i, idx)
                 raise IMLError("E300", "operation target %r is not an @ENTITY" % ttext, i, idx)
             name = ttext[1:]
             if not RE_NAME.fullmatch(name):
                 raise IMLError("E200", "entity name %r does not match [A-Z][A-Z0-9_]*" % ttext, i, idx)
             if verb == "OUT":
-                raise IMLError("E502", "OUT with a target is not representable in IML 0.2", i, idx)
+                raise IMLError("E502", "OUT with a target is not representable in IML", i, idx)
             target = name
             i = j
         mods = []
@@ -179,5 +180,5 @@ def parse_L2(text, registry=None):
             if i >= n:
                 raise IMLError("E300", "missing operation after `=>`", i, idx)
             continue
-        raise IMLError("E502", "outside the 0.2 subset: text after the operation chain (seen %r)" % text[i:i + 12], i, idx)
+        raise IMLError("E502", "outside the supported subset: text after the operation chain (seen %r)" % text[i:i + 12], i, idx)
     return Chain(ops)
