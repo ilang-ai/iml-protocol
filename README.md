@@ -8,6 +8,8 @@ A machine form of I-Lang v4.x operation chains and, since 0.5, of whole I-Lang d
 - **License:** MIT.
 - **Citation:** [CITATION.cff](CITATION.cff); Zenodo archives each release from 0.2.2 on. Concept DOI [10.5281/zenodo.22823285](https://doi.org/10.5281/zenodo.22823285) (all versions); 0.2.2 is [10.5281/zenodo.22823286](https://doi.org/10.5281/zenodo.22823286).
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22823285.svg)](https://doi.org/10.5281/zenodo.22823285)
+
 ## What is in this repository
 
 | Path | What it is |
