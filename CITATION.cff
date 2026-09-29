@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: "If you use IML, please cite it as below."
 title: "IML (I-Lang Machine Layer)"
 abstract: >-
-  IML (I-Lang Machine Layer) is an experimental machine form of I-Lang v4.x
+  IML (I-Lang Machine Layer) is a machine form of I-Lang v4.x
   operation chains and, since version 0.5, of whole I-Lang documents, with
   fixed-width codes derived from the I-Lang canon at a pinned commit. Version 0.2 fixes the supported subset (one linear operation
   chain), the registry derivation and its digest, the grammar and its
