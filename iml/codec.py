@@ -92,6 +92,7 @@ class Surface:
 
 
 SURFACES = {
+    "0.6": Surface("0.6", "@", "$", " ", "the space between operations", True, "$", ("0.6", "0.5", "0.4", "0.3"), True),
     "0.5": Surface("0.5", "@", "$", " ", "the space between operations", True, "$", ("0.5", "0.4", "0.3"), True),
     "0.2": Surface("0.2", "\u03a6", "\u03a9", "\u2192", "`\u2192`", False, "", ("0.2",), False),
 }
@@ -108,6 +109,8 @@ def surface(version):
             if version in other.reads:
                 hint = "; a %s header is read with version=%r%s" % (
                     version, other.version, " (the default reader)" if other.version == DEFAULT_VERSION else "")
+                if other.version == DEFAULT_VERSION:
+                    break
         raise ValueError("unknown IML surface version %r (known: %s)%s" % (version, ", ".join(VERSIONS), hint))
     return sf
 
@@ -309,11 +312,11 @@ def compile(chain, registry=None, version=DEFAULT_VERSION):
 
 
 def compile_document(chains, registry=None):
-    """Chain ASTs -> IML 0.5 document text: the header alone on the first line, then one
-    chain per line, lines joined by `\\n`, no final newline. At least one chain (E300). A
-    document of chains only; compile_doc (iml.doc_codec) writes declarations and text lines."""
+    """Chain ASTs -> IML document text under the registry's header (0.6 by default; 0.5 when the frozen 0.5 registry
+    is passed): the header alone on the first line, then one chain per line, lines joined by `\\n`, no final newline.
+    At least one chain (E300). A document of chains only; compile_doc (iml.doc_codec) writes declarations and text lines."""
     reg = registry or default_registry()
-    sf = surface(DEFAULT_VERSION)
+    sf = surface(reg.version if reg.version in DOCUMENT_LAYER_VERSIONS else DEFAULT_VERSION)
     chains = list(chains)
     if not chains:
         raise IMLError("E300", "a document carries at least one chain")
@@ -459,14 +462,14 @@ def decompile(text, registry=None, version=DEFAULT_VERSION):
             if m.group(1) in DOCUMENT_LAYER_VERSIONS:
                 raise IMLError("E502", "declarations and text lines exist only in the document form (the header alone"
                                " on its first line); a message carries one chain", i)
-            raise IMLError("E502", "declarations and text lines need a 0.5 header (this message's header is version %s)"
+            raise IMLError("E502", "declarations and text lines need a 0.6 or 0.5 header (this message's header is version %s)"
                            % m.group(1), i)
         return _scan_chain(text, i, line_end, reg, sf)
     if nl < 0:
         raise IMLError("E300", "header alone: a document carries at least one %s line after the header"
                        % ("item" if m.group(1) in DOCUMENT_LAYER_VERSIONS else "chain"), length)
     from .doc_read import read_document       # the document layer (iml.doc_*) imports this module
-    return read_document(text, nl, m.group(1), reg, sf)
+    return read_document(text, nl, m.group(1), reg.for_version(m.group(1)), sf)   # a 0.5 header reads with the 0.5 tables
 
 
 def _check_version_and_digest(m, reg, sf):
@@ -477,9 +480,9 @@ def _check_version_and_digest(m, reg, sf):
                 if other.version == DEFAULT_VERSION:
                     hint = "; a %s header is read with version=%r, the default reader (no `--version` on the command line)" % (
                         m.group(1), other.version)
-                else:
-                    hint = "; the %s surface is read with version=%r (`--version %s` on the command line)" % (
-                        m.group(1), other.version, other.version)
+                    break
+                hint = "; the %s surface is read with version=%r (`--version %s` on the command line)" % (
+                    m.group(1), other.version, other.version)
         raise IMLError("E502", "unsupported IML version %s (this decoder reads %s)%s"
                        % (m.group(1), ", ".join(sorted(sf.reads, reverse=True)), hint), len("#iml/"))
     want = reg.digest_for(m.group(1))[:12]

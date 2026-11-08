@@ -625,11 +625,12 @@ class TestHeaderAcceptance(unittest.TestCase):
         cls.h04, cls.h03, cls.h02 = cls.reg.header_for("0.4"), cls.reg.header_for("0.3"), cls.reg.header_for("0.2")
 
     def test_versions(self):
-        self.assertEqual(DEFAULT_VERSION, "0.5")
-        self.assertEqual(VERSIONS, ("0.5", "0.2"))
+        self.assertEqual(DEFAULT_VERSION, "0.6")
+        self.assertEqual(VERSIONS, ("0.6", "0.5", "0.2"))
+        self.assertEqual(surface("0.6").reads, {"0.6", "0.5", "0.4", "0.3"})
         self.assertEqual(surface("0.5").reads, {"0.5", "0.4", "0.3"})
         self.assertEqual(surface("0.2").reads, {"0.2"})
-        self.assertEqual(self.hw, "#iml/0.5/7e29fae7f5ea")
+        self.assertEqual(self.hw, "#iml/0.6/0fddd3752aad")
         self.assertEqual(self.h04, "#iml/0.4/88d05d0839c1")
         for v in ("0.3", "0.4"):
             with self.assertRaises(ValueError) as cm:
@@ -693,7 +694,8 @@ class TestHeaderAcceptance(unittest.TestCase):
         r = run_cli("compile", stdin="[READ]\n")
         self.assertEqual(r.stdout, self.hw + " RD\n")
         r = run_cli("check-registry")
-        self.assertIn("header #iml/0.5/7e29fae7f5ea\n", r.stdout)
+        self.assertIn("header #iml/0.6/0fddd3752aad\n", r.stdout)
+        self.assertIn("header #iml/0.5/7e29fae7f5ea (read by the default reader, full document layer)\n", r.stdout)
         self.assertIn("header #iml/0.4/88d05d0839c1 (read by the default reader, chains only)\n", r.stdout)
         self.assertIn("header #iml/0.3/88d05d0839c1 (read by the default reader, chains only)\n", r.stdout)
         self.assertIn("header #iml/0.2/88d05d0839c1 (read only, --version 0.2)\n", r.stdout)
@@ -719,7 +721,8 @@ class TestGolden72(unittest.TestCase):
         for stem, src, record03 in self.pairs:
             with self.subTest(stem=stem):
                 self.assertTrue(record03.startswith("#iml/0.3/88d05d0839c1 "))
-                self.assertEqual(compile(parse_L2(src)), "#iml/0.5/7e29fae7f5ea " + body(record03))
+                self.assertEqual(compile(parse_L2(src)), self.hw + " " + body(record03))                 # 0.6
+                self.assertEqual(compile(parse_L2(src), version="0.5"), "#iml/0.5/7e29fae7f5ea " + body(record03))
                 self.assertEqual(decompile("#iml/0.4/88d05d0839c1 " + body(record03)), parse_L2(src))
         asts = [parse_L2(src) for _, src, _ in self.pairs]
         self.assertEqual(compile_document(asts), self.hw + "\n" + "\n".join(body(r) for _, _, r in self.pairs))

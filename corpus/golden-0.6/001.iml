@@ -1,0 +1,8 @@
+#iml/0.6/0fddd3752aad
+"::ILANG::v5.0"
+"[TYPE:memory][ID:VAULT-PACKER][VERSION:1.0][DATE:2026-11-08][LANG:en]"
+:ST"@BRAIN, kind:private_git_repository, owner:@OWNER"
+:FC"key:vault_recipient|value:one_age_public_key|why:vault_packer|used_by:none|conf:confirmed|by:agent_inferred"
+:EX"vault_packer|candidates:this_machine;claude_session;ds_other_machine|out:this_machine(path:~/.age/key.txt missing);claude_session(2026-11-03)|left:ds_other_machine|conf:tentative|by:agent_inferred"
+:EX"open_gap|candidates:a;b|out:a(2026-11-03);b(2026-11-03)|left:none|conf:tentative|by:agent_inferred"
+:PR"date:2026-11-08|done:d1|next:n1|unverified:u1"

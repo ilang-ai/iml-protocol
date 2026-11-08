@@ -1,11 +1,14 @@
-"""Load the IML registries and verify their digests (SPEC-IML-0.5.md section 1).
+"""Load the IML registries and verify their digests (SPEC-IML-0.5.md section 1, SPEC-IML-0.6.md section 1).
 
-Two files, both derived from the I-Lang canon by tools/derive_registry.py:
+Three files, all derived from the I-Lang canon by tools/derive_registry.py:
 
-  registry/iml-registry-0.5.json   the default: the chain tables (verbs, aliases, keys,
-                                   entities, value codes) plus the declarations table (49
-                                   names with two-character codes) and the tolerated
-                                   annotations; its digest is new in 0.5
+  registry/iml-registry-0.6.json   the default: the chain tables (verbs, aliases, keys,
+                                   entities, value codes) plus the declarations table (50
+                                   names with two-character codes, ::EXCLUDE registered by
+                                   the canon's 5.0.11 amendment) and the tolerated
+                                   annotations; its digest is new in 0.6
+  registry/iml-registry-0.5.json   the declaration registry of 0.5 (49 names), kept byte
+                                   for byte: the one a 0.5 header names
   registry/iml-registry-0.2.json   the chain registry of 0.2, 0.3 and 0.4, kept byte for
                                    byte (digest 88d05d0839c1...)
 
@@ -27,12 +30,14 @@ import re
 from pathlib import Path
 
 REGISTRY_DIR = Path(__file__).resolve().parents[1] / "registry"
-DEFAULT_PATH = REGISTRY_DIR / "iml-registry-0.5.json"
+DEFAULT_PATH = REGISTRY_DIR / "iml-registry-0.6.json"   # the declaration registry of 0.6 (50 declarations, canon 5.0.11)
+DOC_PATH_05 = REGISTRY_DIR / "iml-registry-0.5.json"    # the declaration registry of 0.5, kept byte for byte: a 0.5 header names it
 CHAIN_PATH = REGISTRY_DIR / "iml-registry-0.2.json"     # the chain registry of 0.2, 0.3 and 0.4
 HEADER_PREFIX = "#iml/"
-HEADER_VERSION = "0.5"   # the surface written by compile; 0.4 and 0.3 are read by the same reader, 0.2 is read only (codec.SURFACES)
-DOCUMENT_LAYER_VERSIONS = ("0.5",)   # header versions whose digest is the 0.5 registry's (the declaration layer)
+HEADER_VERSION = "0.6"   # the surface written by compile; 0.5, 0.4 and 0.3 are read by the same reader, 0.2 is read only (codec.SURFACES)
+DOCUMENT_LAYER_VERSIONS = ("0.6", "0.5")   # header versions whose digest is a declaration registry's (the declaration layer)
 CHAIN_TABLES = ("canon", "verbs", "aliases", "keys", "entities", "value_codes")
+CHAIN_CONTENT = ("verbs", "aliases", "keys", "entities", "value_codes")   # the tables every registry shares; the canon pin may move
 
 
 class RegistryError(Exception):
@@ -81,19 +86,35 @@ class Registry:
         # the digest that 0.2, 0.3 and 0.4 headers carry: this file's own for the 0.2
         # registry, the 0.2 registry's for the 0.5 one (set by load_registry)
         self.chain_digest = self.digest
+        # 0.6: the earlier declaration registry a header may still name (0.5), loaded by load_registry
+        self.prev = None
+        self.doc_digests = {self.version: self.digest} if self.declarations else {}
 
     @property
     def has_declarations(self):
         return bool(self.declarations)
 
     def digest_for(self, version):
-        """The digest a header of the given version carries: the 0.5 registry's own for
-        0.5 (the declaration layer), the chain digest for 0.4, 0.3 and 0.2."""
+        """The digest a header of the given version carries: a declaration registry's own for 0.6 and 0.5 (the
+        declaration layer; the 0.5 digest comes from the frozen 0.5 file), the chain digest for 0.4, 0.3 and 0.2."""
         if version in DOCUMENT_LAYER_VERSIONS:
             if not self.has_declarations:
                 raise RegistryError("registry %s carries no declarations table: no %s header" % (self.version, version))
-            return self.digest
+            d = self.doc_digests.get(version)
+            if d is None:
+                raise RegistryError("registry %s carries no %s declarations table: no %s header" % (self.version, version, version))
+            return d
         return self.chain_digest
+
+    def for_version(self, version):
+        """The registry whose tables a header of the given version was written with: this one for its own version
+        and for the chain versions, the frozen earlier declaration registry (prev) for an earlier declaration-layer
+        header."""
+        if version == self.version or version not in DOCUMENT_LAYER_VERSIONS:
+            return self
+        if self.prev is not None and self.prev.version == version:
+            return self.prev
+        raise RegistryError("registry %s holds no tables for a %s header" % (self.version, version))
 
     def header_for(self, version):
         """`#iml/<version>/<12 hex>`: the header of the given surface version over the
@@ -102,8 +123,9 @@ class Registry:
 
     @property
     def header(self):
-        """The header compile writes: the current surface version (HEADER_VERSION)."""
-        return self.header_for(HEADER_VERSION)
+        """The header compile writes with this registry: its own version for a declaration registry (0.6, or 0.5 when
+        the frozen 0.5 registry is passed explicitly), HEADER_VERSION otherwise."""
+        return self.header_for(self.version if self.version in DOCUMENT_LAYER_VERSIONS else HEADER_VERSION)
 
     def is_verb(self, name):
         return name in self.verbs
@@ -145,20 +167,34 @@ def validate_structure(obj):
             raise RegistryError("a tolerated annotation is a registered declaration")
 
 
-def load_registry(path=None, chain_path=None):
-    """Load a registry file (default: the 0.5 registry) and verify its digest. A registry
+def load_registry(path=None, chain_path=None, prev_path=None):
+    """Load a registry file (default: the 0.6 registry) and verify its digest. A registry
     with a declarations table is paired with the chain registry (default: the 0.2 file):
-    its digest is verified too, its chain tables and canon pin must equal this file's, and
-    its digest becomes chain_digest, the one 0.4, 0.3 and 0.2 headers carry."""
+    its digest is verified too, its chain tables (verbs, aliases, keys, entities, value
+    codes) must equal this file's, and its digest becomes chain_digest, the one 0.4, 0.3
+    and 0.2 headers carry. The 0.6 registry is also paired with the frozen 0.5 registry
+    (default: the 0.5 file), whose digest a 0.5 header carries and whose tables read a 0.5
+    document; its chain tables must equal too. The canon pin may differ between the files:
+    0.6 derives from the canon at 5.0.11, the earlier files from the canon at 127ba56."""
     reg = _load_one(Path(path) if path else DEFAULT_PATH)
     if reg.version != "0.2":
         chain = _load_one(Path(chain_path) if chain_path else CHAIN_PATH)
         if chain.version != "0.2":
             raise RegistryError("chain registry %s is not a 0.2 registry" % chain.path)
-        for member in CHAIN_TABLES:
+        for member in CHAIN_CONTENT:
             if chain.raw[member] != reg.raw[member]:
                 raise RegistryError("registry %s and chain registry %s differ in %r" % (reg.path, chain.path, member))
         reg.chain_digest = chain.digest
+        if reg.version == "0.6":
+            prev = _load_one(Path(prev_path) if prev_path else DOC_PATH_05)
+            if prev.version != "0.5":
+                raise RegistryError("registry %s is not a 0.5 registry" % prev.path)
+            for member in CHAIN_CONTENT:
+                if chain.raw[member] != prev.raw[member]:
+                    raise RegistryError("registry %s and chain registry %s differ in %r" % (prev.path, chain.path, member))
+            prev.chain_digest = chain.digest
+            reg.prev = prev
+            reg.doc_digests[prev.version] = prev.digest
     return reg
 
 

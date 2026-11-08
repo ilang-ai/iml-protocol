@@ -36,12 +36,19 @@ DESIGN_LIST = ("[Π:READ]", "[BATC:READ]", "[BATC:READ|src=@LOCAL,mch=*.md]", "[
 
 
 H04, H05 = "#iml/0.4/88d05d0839c1", "#iml/0.5/7e29fae7f5ea"
+H06 = "#iml/0.6/0fddd3752aad"
 
 
 def to05(text04):
-    """The same text under the 0.5 header: what compile writes in 0.5."""
+    """The same text under the 0.5 header: what compile wrote in 0.5 (still read)."""
     assert text04.startswith(H04)
     return H05 + text04[len(H04):]
+
+
+def to06(text04):
+    """The same text under the 0.6 header: what compile writes in 0.6."""
+    assert text04.startswith(H04)
+    return H06 + text04[len(H04):]
 
 
 def read_lf(path):
@@ -93,12 +100,12 @@ class TestGolden04(unittest.TestCase):
                 a = self.asts[stem]
                 m = iml[:-1]
                 canon = print_L2(a)
-                self.assertEqual(compile(a), to05(m))
+                self.assertEqual(compile(a), to06(m))
                 self.assertEqual(decompile(m), a)                          # L1, the 0.4 record read
                 self.assertEqual(decompile(to05(m)), a)                    # L1, the 0.5 message
                 self.assertEqual(print_L2(parse_L2(canon)), canon)         # L2a
-                self.assertEqual(compile(decompile(m)), to05(m))           # L2b, recompiled under the 0.5 header
-                self.assertEqual(compile(decompile(to05(m))), to05(m))     # L2b
+                self.assertEqual(compile(decompile(m)), to06(m))           # L2b, recompiled under the 0.6 header
+                self.assertEqual(compile(decompile(to06(m))), to06(m))     # L2b
                 self.assertEqual(print_L2(decompile(m)), canon)            # L2c
                 self.assertNotIn("\n", canon)
                 # the same text under a 0.3 header reads the same (the header names the writer)
@@ -166,18 +173,18 @@ class TestGolden04(unittest.TestCase):
         self.assertEqual(len(asts), 5)
         self.assertIn("\n\n", src)
         self.assertIn("\n  =>[", src)
-        self.assertEqual(compile_document(asts) + "\n", to05(iml))
+        self.assertEqual(compile_document(asts) + "\n", to06(iml))
         self.assertEqual(decompile(iml), asts)
         self.assertEqual(decompile(to05(iml)), asts)
         self.assertEqual(decompile(iml[:-1]), asts)
         self.assertTrue(is_document(iml))
         self.assertEqual(iml.split("\n")[0], self.h)
         self.assertEqual(iml.count("\n"), 6)
-        self.assertEqual(compile_document(decompile(iml)), to05(iml)[:-1])
+        self.assertEqual(compile_document(decompile(iml)), to06(iml)[:-1])
         self.assertTrue(any(op.verbref for a in asts for op in a.ops))
         # the same five chains, each on one line, compile to the same document
         one_line = "\n".join(print_L2(a) for a in asts) + "\n"
-        self.assertEqual(compile_document([parse_L2(t) for _, t in join_chain_lines(one_line)]) + "\n", to05(iml))
+        self.assertEqual(compile_document([parse_L2(t) for _, t in join_chain_lines(one_line)]) + "\n", to06(iml))
 
     def test_cli(self):
         stem, src, iml = self.items[15]
@@ -185,13 +192,13 @@ class TestGolden04(unittest.TestCase):
         self.assertIn("\n  =>", src)
         r = run_cli("compile", str(GOLDEN_04 / (stem + ".ilang")))
         self.assertEqual(r.returncode, 0, r.stderr)
-        self.assertEqual(r.stdout, to05(iml))
+        self.assertEqual(r.stdout, to06(iml))
         r = run_cli("decompile", str(GOLDEN_04 / (stem + ".iml")))
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertEqual(r.stdout, print_L2(self.asts[stem]) + "\n")
         r = run_cli("compile", "--document", str(GOLDEN_04 / "doc-01.ilang"))
         self.assertEqual(r.returncode, 0, r.stderr)
-        self.assertEqual(r.stdout, to05(read_lf(GOLDEN_04 / "doc-01.iml")))
+        self.assertEqual(r.stdout, to06(read_lf(GOLDEN_04 / "doc-01.iml")))
         r = run_cli("decompile", str(GOLDEN_04 / "doc-01.iml"))
         self.assertEqual(r.returncode, 0, r.stderr)
         expected = [print_L2(parse_L2(t)) for _, t in join_chain_lines(read_lf(GOLDEN_04 / "doc-01.ilang"))]

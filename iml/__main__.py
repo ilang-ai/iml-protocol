@@ -30,8 +30,8 @@
                           the canonical I-Lang; then the same for the whole document
                           (compile --document -> decompile -> compare, and the canonical
                           print read back); exit 1 on any failure
-  check-registry [PATH]   load the registry (default: the 0.5 registry, paired with the
-                          0.2 chain registry), verify the digests, print the counts
+  check-registry [PATH]   load the registry (default: the 0.6 registry, paired with the
+                          frozen 0.5 and 0.2 registries), verify the digests, print the counts
 
 FILE `-` or no FILE reads standard input. Input is UTF-8. Every leading byte order mark
 (EF BB BF) is dropped, on standard input and on FILE: Windows PowerShell 5.1 puts one in
@@ -226,9 +226,9 @@ def cmd_compile(path, document):
 
 def cmd_decompile(path, version):
     name, data = read_text(path)
-    if version == DEFAULT_VERSION and is_document(data):
+    if version in DOCUMENT_LAYER_VERSIONS and is_document(data):
         try:
-            text = print_doc(decompile(data))
+            text = print_doc(decompile(data, version=version))
         except IMLError as e:
             report(name, line_of(data, e), e)
             return 1
@@ -317,11 +317,21 @@ def cmd_check_registry(path):
     print("digest %s" % reg.digest)
     if reg.has_declarations:
         print("chain registry digest %s (the one 0.4, 0.3 and 0.2 headers carry)" % reg.chain_digest)
-        print("header %s" % reg.header_for(DEFAULT_VERSION))
-    for v in sorted(surface(DEFAULT_VERSION).reads - {DEFAULT_VERSION}, reverse=True):
-        print("header %s (read by the default reader, chains only)" % reg.header_for(v))
+        if reg.prev is not None:
+            print("declaration registry %s digest %s (the one %s headers carry)" % (reg.prev.version, reg.prev.digest, reg.prev.version))
+        print("header %s" % reg.header)
+    default_reads = surface(DEFAULT_VERSION).reads
+    for v in sorted(default_reads - {DEFAULT_VERSION}, reverse=True):
+        try:
+            h = reg.header_for(v)
+        except RegistryError:
+            continue
+        if v in DOCUMENT_LAYER_VERSIONS:
+            print("header %s (read by the default reader, full document layer)" % h)
+        else:
+            print("header %s (read by the default reader, chains only)" % h)
     for v in VERSIONS:
-        if v != DEFAULT_VERSION:
+        if v != DEFAULT_VERSION and v not in default_reads:
             print("header %s (read only, --version %s)" % (reg.header_for(v), v))
     return 0
 

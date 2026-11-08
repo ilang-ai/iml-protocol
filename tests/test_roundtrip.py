@@ -233,7 +233,7 @@ class TestRoundTripRandom(unittest.TestCase):
             passed = refused = 0
             failures = []
             for i, x in enumerate(self.chains):
-                if version != DEFAULT_VERSION and has_verbref(parse_L2(x)):
+                if version == "0.2" and has_verbref(parse_L2(x)):       # 0.6 and 0.5 spell a verb reference; 0.2 cannot
                     with self.assertRaises(IMLError) as cm:
                         compile(parse_L2(x), version=version)
                     self.assertEqual(cm.exception.code, "E502", x)
@@ -251,7 +251,7 @@ class TestRoundTripRandom(unittest.TestCase):
                      ", %d with a verb reference refused (E502, no 0.2 spelling)" % refused if refused else "",
                      SEED, sys.version.split()[0]))
             self.assertEqual(passed + refused, COUNT, failures)
-            self.assertEqual(refused > 0, version != DEFAULT_VERSION)
+            self.assertEqual(refused > 0, version == "0.2")
         lengths = {len(parse_L2(x).ops) for x in self.chains[:2000]}
         self.assertEqual(lengths, set(range(1, 9)))
         self.assertEqual(len(canon), COUNT)

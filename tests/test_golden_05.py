@@ -41,7 +41,7 @@ def blocks(text, start, end):
 class TestGolden05(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.reg = default_registry()
+        cls.reg = default_registry().for_version("0.5")     # 0.6: the 0.5 corpus reads and writes with the frozen 0.5 registry
         cls.docs = []
         for p in sorted(GOLDEN_05.glob("*.ilang")):
             cls.docs.append((p.stem, read_lf(p), read_lf(p.with_suffix(".iml"))))
@@ -62,12 +62,12 @@ class TestGolden05(unittest.TestCase):
                 items = self.asts[stem]
                 m = iml[:-1]
                 printed = print_doc(items)
-                self.assertEqual(compile_doc(items), m)
+                self.assertEqual(compile_doc(items, registry=self.reg), m)
                 self.assertEqual(decompile_doc(m), items)                     # L1
                 self.assertEqual(decompile(m), items)
                 self.assertEqual(print_doc(parse_doc(printed)), printed)       # L2
                 self.assertEqual(parse_doc(printed), items)
-                self.assertEqual(compile_doc(decompile_doc(m)), m)             # L2
+                self.assertEqual(compile_doc(decompile_doc(m), registry=self.reg), m)   # L2
 
     def test_coverage(self):
         every = [x for items in self.asts.values() for x in walk(items)]
@@ -89,8 +89,9 @@ class TestGolden05(unittest.TestCase):
         self.assertIn("\n    =>[", sources)
 
     def test_canon_text_verbatim(self):
-        patch2 = (ROOT / "canon" / "archive" / "SPEC-v5.0-PATCH-2.md").read_text(encoding="utf-8")
-        spec = (ROOT / "canon" / "SPEC.md").read_text(encoding="utf-8")
+        # the corpus quotes the canon at 127ba56, the pin of 0.5; 0.6 moved canon/ to 5.0.11 and keeps these two files
+        patch2 = (ROOT / "canon" / "127ba56" / "archive" / "SPEC-v5.0-PATCH-2.md").read_text(encoding="utf-8")
+        spec = (ROOT / "canon" / "127ba56" / "SPEC.md").read_text(encoding="utf-8")
         src = {stem: s for stem, s, _ in self.docs}
         self.assertEqual(src["001"], "::ILANG::v5.0\n" + blocks(patch2, "## Appendix A", "Shapes exercised:")[0])
         for stem, (a, b) in (("002", ("### 10.2 ", "### 10.3 ")), ("003", ("### 10.3 ", "### 10.4 ")),

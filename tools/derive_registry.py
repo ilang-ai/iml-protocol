@@ -52,16 +52,24 @@ CANON = ROOT / "canon"
 PIN = CANON / "PIN"
 REGISTRY_PATH = ROOT / "registry" / "iml-registry-0.2.json"
 REGISTRY_05_PATH = ROOT / "registry" / "iml-registry-0.5.json"
+REGISTRY_06_PATH = ROOT / "registry" / "iml-registry-0.6.json"
+# 0.6: the 0.2 and 0.5 files are frozen, byte for byte, as the files their headers name; only the 0.6 file is derived
+FROZEN = {REGISTRY_PATH: "bf20e03caac60d663b17bca436cd9d80c350bce57bce9bb9e5cf33c4a5081b34", REGISTRY_05_PATH: "698b8834f589f9487f53c9547d9c07975fb31451766b4a56e380c5231546fe75"}
 
 IML_VERSION = "0.2"
 IML_VERSION_05 = "0.5"
-# design 0.5 section 2: the declaration classes in table order, with their counts
+IML_VERSION_06 = "0.6"
+# design 0.5 section 2: the declaration classes in table order, with their counts (the 0.5 table, from PATCH-2 1.5 as archived)
 DECL_CLASSES = [("v3", 14), ("v4", 8), ("v5", 9), ("amended", 1), ("meta", 3), ("terminator", 1), ("narrative", 13)]
+# 0.6: the canon's 5.0.11 amendment registers ::EXCLUDE through the 1.5 channel; the table is read from SPEC-v5.0.md 1.5
+DECL_CLASSES_06 = [("v3", 14), ("v4", 8), ("v5", 9), ("amended", 2), ("meta", 3), ("terminator", 1), ("narrative", 13)]
+CHAIN_CONTENT = ("verbs", "aliases", "keys", "entities", "value_codes")
 CANON_FILES = [
     "SPEC.md",
     "SPEC-v4.1-MEDIA-PROFILE.md",
     "archive/SPEC-v5.0-PATCH-2.md",
     "ilang_grammar_validator.py",
+    "SPEC-v5.0.md",
 ]
 ALPHANUM = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 VOWELS = set("AEIOU")
@@ -421,16 +429,17 @@ VALIDATOR_DECL_SETS = {"v3": "REGISTRY_V3", "v4": "REGISTRY_V4", "v5": "REGISTRY
                        "meta": "META_DECLS", "terminator": "TERMINATORS", "narrative": "DECL_NARRATIVE"}
 
 
-def derive_declarations():
-    """The declarations table and the tolerated annotations of the 0.5 registry."""
-    classes, double, prose, tolerated = parse_declarations(canon_text("archive/SPEC-v5.0-PATCH-2.md"),
-                                                           canon_text("SPEC.md"))
+def derive_declarations(source="SPEC-v5.0.md", expected=None):
+    """The declarations table and the tolerated annotations: for 0.6 from SPEC-v5.0.md 1.5 and 1.6 (the current canon,
+    where the 5.0.11 amendment registered ::EXCLUDE); the 0.5 table read PATCH-2 as archived."""
+    expected = expected or DECL_CLASSES_06
+    classes, double, prose, tolerated = parse_declarations(canon_text(source), canon_text("SPEC.md"))
     names = [n for _, ns in classes for n in ns]
     unique(names, "declarations")
     unique(double + prose + tolerated, "declaration flags")
     counts = [(cls, len(ns)) for cls, ns in classes]
-    if counts != DECL_CLASSES:
-        fail("declaration counts %s, expected %s" % (counts, DECL_CLASSES))
+    if counts != expected:
+        fail("declaration counts %s, expected %s" % (counts, expected))
     if (len(double), len(prose), len(tolerated)) != (6, 5, 2):
         fail("double %d, prose %d, tolerated %d; expected 6, 5, 2" % (len(double), len(prose), len(tolerated)))
     narrative = dict(classes)["narrative"]
@@ -453,16 +462,29 @@ def derive_declarations():
 
 
 def derive_both():
-    """(the 0.2 chain registry, the 0.5 registry). The 0.5 registry carries the same chain
-    tables and canon pin under iml_version 0.5, plus declarations and tolerated_annotations."""
-    reg02 = derive()
+    """(the frozen 0.2 chain registry as committed, the 0.6 registry). The 0.6 registry carries the chain tables derived
+    from canon/ (which must equal the frozen 0.2 tables), the canon pin of canon/PIN, the 50 declarations and the
+    tolerated annotations under iml_version 0.6. The 0.2 and 0.5 files are not re-derived: a header names them."""
+    derived02 = derive()
+    frozen02 = json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
+    for member in CHAIN_CONTENT:
+        if derived02[member] != frozen02[member]:
+            fail("chain table %r derived from canon/ differs from the frozen 0.2 registry" % member)
     declarations, tolerated = derive_declarations()
-    reg05 = {k: v for k, v in reg02.items() if k != "digest"}
-    reg05["iml_version"] = IML_VERSION_05
-    reg05["declarations"] = declarations
-    reg05["tolerated_annotations"] = tolerated
-    reg05["digest"] = digest_of(reg05)
-    return reg02, reg05
+    reg06 = {k: v for k, v in derived02.items() if k != "digest"}
+    reg06["iml_version"] = IML_VERSION_06
+    reg06["declarations"] = declarations
+    reg06["tolerated_annotations"] = tolerated
+    reg06["digest"] = digest_of(reg06)
+    return frozen02, reg06
+
+
+def check_frozen():
+    """The 0.2 and 0.5 registry files are byte for byte the files their headers name."""
+    for path, sha in FROZEN.items():
+        got = hashlib.sha256(path.read_bytes()).hexdigest()
+        if got != sha:
+            fail("%s is not the frozen file (%s != %s)" % (path.name, got, sha))
 
 
 def serialize(reg):
@@ -484,40 +506,30 @@ def print_tables(reg):
 
 
 def main(argv=None):
-    p = argparse.ArgumentParser(description="derive the IML registries (0.2 chain registry, 0.5 registry) from canon/")
-    p.add_argument("--check", action="store_true", help="re-derive and compare with both registry files")
+    p = argparse.ArgumentParser(description="derive the IML 0.6 registry from canon/; the 0.2 and 0.5 files are frozen")
+    p.add_argument("--check", action="store_true", help="re-derive and compare with the 0.6 file; verify the frozen 0.2 and 0.5 files")
     p.add_argument("--tables", action="store_true", help="print name=code tables")
     a = p.parse_args(argv)
     try:
-        reg02, reg05 = derive_both()
+        check_frozen()
+        reg02, reg06 = derive_both()
     except DeriveError as e:
         print("derive_registry: ABORT: %s" % e, file=sys.stderr)
         return 1
-    files = [(REGISTRY_PATH, reg02), (REGISTRY_05_PATH, reg05)]
     if a.tables:
-        print_tables(reg05)
+        print_tables(reg06)
         print("DIGEST 0.2 " + reg02["digest"])
         return 0
+    data = serialize(reg06)
     if a.check:
-        bad = 0
-        for path, reg in files:
-            if not path.exists():
-                print("derive_registry: %s is missing" % path, file=sys.stderr)
-                bad += 1
-            elif path.read_bytes() != serialize(reg):
-                print("derive_registry: %s differs from a fresh derivation" % path, file=sys.stderr)
-                bad += 1
-        if bad:
+        if not REGISTRY_06_PATH.exists() or REGISTRY_06_PATH.read_bytes() != data:
+            print("derive_registry: %s does not reproduce from canon/" % REGISTRY_06_PATH.name, file=sys.stderr)
             return 1
-        print("registry ok: %s digest %s; %s digest %s" % (REGISTRY_PATH.name, reg02["digest"],
-                                                           REGISTRY_05_PATH.name, reg05["digest"]))
+        print("derive_registry: %s reproduces; %s frozen" % (REGISTRY_06_PATH.name, ", ".join(p.name for p in FROZEN)))
         return 0
-    for path, reg in files:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(serialize(reg))
-        print("wrote %s (digest %s)" % (path.relative_to(ROOT).as_posix(), reg["digest"]))
+    REGISTRY_06_PATH.write_bytes(data)
+    print("wrote %s (digest %s)" % (REGISTRY_06_PATH.name, reg06["digest"]))
     return 0
-
 
 if __name__ == "__main__":
     for stream in (sys.stdout, sys.stderr):

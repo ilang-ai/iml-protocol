@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tests"))
 
-from iml.registry import CHAIN_PATH, DEFAULT_PATH, RegistryError, load_registry  # noqa: E402
+from iml.registry import CHAIN_PATH, DOC_PATH_05, RegistryError, load_registry  # noqa: E402
 from test_registry import load_derive_module  # noqa: E402
 from validator_oracle import namespace  # noqa: E402
 
@@ -34,12 +34,12 @@ CLASS_SETS = {"v3": "REGISTRY_V3", "v4": "REGISTRY_V4", "v5": "REGISTRY_V5", "am
 class TestRegistry05(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.obj = json.loads(DEFAULT_PATH.read_text(encoding="utf-8"))
-        cls.reg = load_registry()
+        cls.obj = json.loads(DOC_PATH_05.read_text(encoding="utf-8"))     # 0.6: the 0.5 file is frozen, loaded by its path
+        cls.reg = load_registry(DOC_PATH_05)
         cls.ns = namespace()
 
     def test_files_and_digests(self):
-        self.assertEqual(DEFAULT_PATH.name, "iml-registry-0.5.json")
+        self.assertEqual(DOC_PATH_05.name, "iml-registry-0.5.json")
         self.assertEqual(CHAIN_PATH.name, "iml-registry-0.2.json")
         self.assertEqual(self.reg.digest, DIGEST_05)
         self.assertEqual(self.reg.chain_digest, DIGEST_02)
@@ -70,7 +70,8 @@ class TestRegistry05(unittest.TestCase):
     def test_cross_check_with_the_validator(self):
         for cls, const in CLASS_SETS.items():
             names = {d["name"] for d in self.obj["declarations"] if d["class"] == cls}
-            self.assertEqual(names, set(self.ns[const]), cls)
+            expected = set(self.ns[const]) - ({"EXCLUDE"} if cls == "amended" else set())   # registered by the canon after 0.5
+            self.assertEqual(names, expected, cls)
         self.assertEqual(set(self.reg.double), set(self.ns["NARR_DOUBLE"]))
         self.assertEqual(set(self.reg.prose), set(self.ns["PROSE_BODY"]))
         self.assertEqual(set(self.reg.tolerated), set(self.ns["TOLERATED_ANNOT"]))
@@ -105,7 +106,7 @@ class TestRegistry05(unittest.TestCase):
             d.parse_declarations(patch2, d.canon_text("SPEC.md"))
 
     def test_tampered_or_mismatched_registry_is_refused(self):
-        obj = json.loads(DEFAULT_PATH.read_text(encoding="utf-8"))
+        obj = json.loads(DOC_PATH_05.read_text(encoding="utf-8"))
         obj["declarations"][0]["code"] = "QQ"
         with tempfile.TemporaryDirectory() as tmp:
             p = Path(tmp) / "bad.json"

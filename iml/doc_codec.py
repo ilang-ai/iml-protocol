@@ -61,11 +61,12 @@ def compile_doc(items, registry=None):
     """Document AST -> IML 0.5 document text: the header alone on the first line, then the
     items, lines joined by `\\n`, no final newline. At least one item (E300)."""
     reg = registry or default_registry()
-    sf = surface(HEADER_VERSION)
+    hv = reg.version if reg.version in DOCUMENT_LAYER_VERSIONS else HEADER_VERSION   # 0.6; 0.5 with the frozen 0.5 registry
+    sf = surface(hv)
     items = list(items)
     if not items:
         raise IMLError("E300", "a document carries at least one item")
-    lines = [reg.header_for(HEADER_VERSION)]
+    lines = [reg.header_for(hv)]
     for k, item in enumerate(items):
         try:
             lines.extend(encode_item(item, reg, sf))

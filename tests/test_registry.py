@@ -26,7 +26,7 @@ EXPECTED_ALIASES = {
     "Σ": "MERGE", "Δ": "DIFF", "φ": "FILT", "∇": "SORT", "λ": "MAP", "∂": "SPLIT", "μ": "STAT",
     "ψ": "SENT", "ξ": "HASH", "ζ": "CMPR", "θ": "XLAT", "Ω": "OUT", "Π": "BATC",
 }
-CANON_COMMIT = "127ba56f4eb1f35c2951d4aec4b7bd22831119ff"
+CANON_COMMIT = "d1d436733373c6342a74d4865348761320138613"   # the 0.6 registry: ilang-spec 5.0.11
 
 
 def load_derive_module():
@@ -44,7 +44,11 @@ class TestDerivation(unittest.TestCase):
         self.assertEqual((first02, first05), (second02, second05))
         self.assertEqual(first02, CHAIN_PATH.read_bytes())
         self.assertEqual(first05, DEFAULT_PATH.read_bytes())
-        self.assertEqual(d.serialize(d.derive()), CHAIN_PATH.read_bytes())
+        # 0.6: the chain tables still derive from canon/ as the frozen 0.2 file has them; the canon pin moved
+        derived, frozen = d.derive(), json.loads(CHAIN_PATH.read_text(encoding="utf-8"))
+        for member in ("verbs", "aliases", "keys", "entities", "value_codes"):
+            self.assertEqual(derived[member], frozen[member], member)
+        d.check_frozen()
 
     def test_check_mode_exits_zero(self):
         r = subprocess.run([sys.executable, str(ROOT / "tools" / "derive_registry.py"), "--check"],
@@ -68,28 +72,29 @@ class TestRegistryContent(unittest.TestCase):
     def test_digest(self):
         self.assertEqual(len(self.obj["digest"]), 64)
         self.assertEqual(compute_digest(self.obj), self.obj["digest"])
-        self.assertEqual(self.obj["digest"][:12], "7e29fae7f5ea")
+        self.assertEqual(self.obj["digest"][:12], "0fddd3752aad")
         chain = json.loads(CHAIN_PATH.read_text(encoding="utf-8"))
         self.assertEqual(compute_digest(chain), chain["digest"])
         self.assertEqual(chain["digest"][:12], "88d05d0839c1")
-        # the default registry is the 0.5 one; the 0.2 one, unchanged, is the chain registry
+        # the default registry is the 0.6 one; the 0.2 one, unchanged, is the chain registry
         # whose digest 0.4, 0.3 and 0.2 headers carry; the header version is the surface's
-        self.assertEqual(self.reg.version, "0.5")
-        self.assertEqual(self.obj["iml_version"], "0.5")
+        self.assertEqual(self.reg.version, "0.6")
+        self.assertEqual(self.obj["iml_version"], "0.6")
         self.assertEqual(chain["iml_version"], "0.2")
-        self.assertEqual(HEADER_VERSION, "0.5")
+        self.assertEqual(HEADER_VERSION, "0.6")
         self.assertEqual(HEADER_VERSION, __version__.rsplit(".", 1)[0])
         self.assertEqual(self.reg.chain_digest, chain["digest"])
-        self.assertEqual(self.reg.header, "#iml/0.5/" + self.obj["digest"][:12])
-        self.assertEqual(self.reg.header_for("0.5"), self.reg.header)
+        self.assertEqual(self.reg.header, "#iml/0.6/" + self.obj["digest"][:12])
+        self.assertEqual(self.reg.header_for("0.6"), self.reg.header)
+        self.assertEqual(self.reg.header_for("0.5"), "#iml/0.5/7e29fae7f5ea")      # the frozen 0.5 registry's digest
         for v in ("0.4", "0.3", "0.2"):
             self.assertEqual(self.reg.header_for(v), "#iml/%s/" % v + chain["digest"][:12])
 
     def test_canon_pin(self):
         self.assertEqual(self.obj["canon"]["commit"], CANON_COMMIT)
         files = self.obj["canon"]["files"]
-        self.assertEqual(set(files), {"SPEC.md", "SPEC-v4.1-MEDIA-PROFILE.md",
-                                      "archive/SPEC-v5.0-PATCH-2.md", "ilang_grammar_validator.py"})
+        self.assertEqual(set(files), {"SPEC.md", "SPEC-v4.1-MEDIA-PROFILE.md", "archive/SPEC-v5.0-PATCH-2.md",
+                                      "ilang_grammar_validator.py", "SPEC-v5.0.md"})
         for name, sha in files.items():
             self.assertEqual(hashlib.sha256((ROOT / "canon" / name).read_bytes()).hexdigest(), sha, name)
         pin = (ROOT / "canon" / "PIN").read_text(encoding="utf-8")

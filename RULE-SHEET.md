@@ -1,10 +1,10 @@
-# IML (I-Lang Machine Layer) 0.5 rule sheet
+# IML (I-Lang Machine Layer) 0.6 rule sheet
 
-IML is a machine spelling of I-Lang chains and documents; this sheet is enough to read and write IML 0.5. Verb roots, key codes, entity marks, aliases and declaration codes come from `registry/iml-registry-0.5.json` (digest prefix `7e29fae7f5ea`): use the file, never a guess. Full rules: `SPEC-IML-0.5.md`.
+IML is a machine spelling of I-Lang chains and documents; this sheet is enough to read and write IML 0.6. Verb roots, key codes, entity marks, aliases and declaration codes come from `registry/iml-registry-0.6.json` (digest prefix `0fddd3752aad`): use the file, never a guess. Full rules: `SPEC-IML-0.5.md` with the changes of `SPEC-IML-0.6.md`.
 
 ## 1. Two shapes
 
-Message, one line: `#iml/0.5/<12 lowercase hex> <chain>`. Document: the header alone on the first line, then the items of section 5; no blank line, no trailing space, no second header. Lines end with `\n` (`\r\n` accepted). The hex is the registry digest prefix; ops are separated by exactly one space. Write `#iml/0.5/`. Also read `#iml/0.4/` and `#iml/0.3/` (prefix `88d05d0839c1`): chains only, else E502. `#iml/0.2/` is the old surface (`Φ`, `Ω`, `→`): E502.
+Message, one line: `#iml/0.6/<12 lowercase hex> <chain>`. Document: the header alone on the first line, then the items of section 5; no blank line, no trailing space, no second header. Lines end with `\n` (`\r\n` accepted). The hex is the registry digest prefix; ops are separated by exactly one space. Write `#iml/0.6/`. Also read `#iml/0.5/` (prefix `7e29fae7f5ea`): the full document layer with the 0.5 tables, which have no `EX`; and `#iml/0.4/` and `#iml/0.3/` (prefix `88d05d0839c1`): chains only, else E502. `#iml/0.2/` is the old surface (`Φ`, `Ω`, `→`): E502.
 
 ## 2. Reading an op (IML to I-Lang)
 
@@ -36,7 +36,7 @@ Input: `[VERB(:@TARGET)?(|k=v,k=v)?]` joined by `=>`; whitespace around the chai
 - `[BATC:VERB]` or `[Π:VERB]` (canon §3.9; BATC only: elsewhere a target without `@` is E300): `BT:` plus the verb's root, an alias meaning its verb; unknown (`REED`, `read`) E304; OUT or `Ω` E502. `[BATC:@SRC]` is an entity target; `[BATC|op=READ]` is a string modifier (`BTop=READ`); never convert one into the other.
 - Key to its code (registry; unknown E302); keys keep their order, separated by `,`.
 - Value: a bare `@NAME` is an entity reference, `@` plus mark or `@{NAME}`. Otherwise take the content (unescape a quoted string): bare if not empty, without `, " \` or whitespace, and not starting with `~ @ $ "`; else quoted with the escapes. Never change the characters.
-- Header `#iml/0.5/` plus the digest prefix, then the ops joined by one space on one line whatever the source layout, nothing else.
+- Header `#iml/0.6/` plus the digest prefix, then the ops joined by one space on one line whatever the source layout, nothing else.
 
 ## 5. Documents
 
@@ -53,7 +53,7 @@ From I-Lang (blank and `---` lines and whitespace around a line are layout):
 
 To I-Lang: `T[n] ::NAME::SUB{head}`, body indented two spaces, nested body four; span `::NAME{`, lines, `}`; wrapped `::NAME{head`, lines, `}` after the last; opaque: header, lines verbatim, `X`. No blank line, except one between a declaration with no body and a next `[TAG]` or `T[n]=` text line.
 
-Codes: STATE ST, TRUST TR, ALIVE AL, MEMORY MM, GENE GN, GENE_MUTABLE GM, RULE RL, ACTIVATE AC, FACT FC, LESSON LS, PROGRESS PR, PRIORITY PT, DECAY DC, IMMUNE IM, UNTRUSTED UN, BUDGET BD, STATUS SS, OBJECTIVE OB, RUBRIC RB, EVIDENCE EV, PRIOR PI, FALLBACK FL, JUDGE JD, BOUNDARY BN, DIM DM, MODE MD, FUNC FN, SCHEMA SC, CASE CS, CLAUSE CL, MODULE ML, LIST LT, GRAMMAR GR, BODY BY, REGISTRY RG, END_UNTRUSTED EN, SAY SY, THINK TH, ACT AT, DECIDE DD, DISCOVER DS, CREATE CR, EVENT ET, SILENCE SL, META MT, IRONY IR, FORESHADOW FR, CALLBACK CB, EMOTION_FIELD EM.
+Codes: STATE ST, TRUST TR, ALIVE AL, MEMORY MM, GENE GN, GENE_MUTABLE GM, RULE RL, ACTIVATE AC, FACT FC, LESSON LS, PROGRESS PR, PRIORITY PT, DECAY DC, IMMUNE IM, UNTRUSTED UN, BUDGET BD, STATUS SS, OBJECTIVE OB, RUBRIC RB, EVIDENCE EV, PRIOR PI, FALLBACK FL, JUDGE JD, BOUNDARY BN, DIM DM, MODE MD, FUNC FN, SCHEMA SC, CASE CS, CLAUSE CL, MODULE ML, LIST LT, EXCLUDE EX, GRAMMAR GR, BODY BY, REGISTRY RG, END_UNTRUSTED EN, SAY SY, THINK TH, ACT AT, DECIDE DD, DISCOVER DS, CREATE CR, EVENT ET, SILENCE SL, META MT, IRONY IR, FORESHADOW FR, CALLBACK CB, EMOTION_FIELD EM.
 
 ## 6. Outside
 

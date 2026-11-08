@@ -138,7 +138,7 @@ MSG_NO_PRODUCTION = "line matches no I-Lang production: %s"
 MSG_MALFORMED_HEADER = "malformed declaration header: %s"
 MSG_MALFORMED_MARKER = "malformed ::ILANG document marker: %s"
 MSG_TWO_SEGMENTS = "::%s::%s \u2014 only ::MODULE takes a two-segment name (\u00a71.7)"
-MSG_UNREGISTERED = ("::%s is not in the declaration registry (32 structural + 13 narrative,"
+MSG_UNREGISTERED = ("::%s is not in the declaration registry (33 structural + 13 narrative,"
                     " PATCH-2 \u00a71.5/\u00a71.6)")
 MSG_ENTITY = "entity `%s` violates @[A-Z][A-Z0-9_]* (\u00a72.2)"
 MSG_LACKS_BRACE = "::%s header lacks `{`"

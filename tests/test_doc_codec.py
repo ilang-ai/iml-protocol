@@ -19,6 +19,7 @@ from iml import (Chain, Decl, IMLError, Op, Text, compile, compile_doc, compile_
 from iml.__main__ import main  # noqa: E402
 
 H5 = "#iml/0.5/7e29fae7f5ea"
+H6 = "#iml/0.6/0fddd3752aad"
 H4 = "#iml/0.4/88d05d0839c1"
 DESIGN_SRC = """::ILANG::v5.0::SPEC
 [TYPE:protocol_specification]
@@ -43,7 +44,7 @@ T[0] ::EVENT{1998|entered_wuhan_university}
 ::MODULE::CORE{
 }
 """
-DESIGN_IML = H5 + """
+DESIGN_IML = H6 + """
 "::ILANG::v5.0::SPEC"
 "[TYPE:protocol_specification]"
 :ST"@OPUS, role:strategic_review"
@@ -99,15 +100,15 @@ class TestDocumentForm(unittest.TestCase):
         chains = [parse_L2("[READ:@GH]=>[Ω]"), parse_L2("[LIST:@LOCAL|mch=*.md]=>[Π:READ]=>[Σ]=>[Ω]")]
         d5 = compile_document(chains)
         self.assertEqual(d5, compile_doc(chains))
-        self.assertEqual(d5, H5 + "\nRD@GH $\nLS@LCmc=*.md BT:RD MR $")
+        self.assertEqual(d5, H6 + "\nRD@GH $\nLS@LCmc=*.md BT:RD MR $")
         self.assertEqual(decompile(d5), chains)
         self.assertEqual(decompile(H4 + d5[len(H5):]), chains)               # a 0.4 document, same reader
         self.assertEqual(decompile_doc(H4 + d5[len(H5):]), chains)
 
     def test_headers_and_versions(self):
         reg = default_registry()
-        self.assertEqual(reg.header, H5)
-        self.assertTrue(compile(parse_L2("[READ]")).startswith(H5 + " "))
+        self.assertEqual(reg.header, H6)
+        self.assertTrue(compile(parse_L2("[READ]")).startswith(H6 + " "))
         for text, code in ((H4 + '\n:ST"a"', "E502"), ("#iml/0.3/88d05d0839c1\n\"x\"", "E502"),
                            (H4 + "\n RD", "E300"), (H5 + ' :ST"a"', "E502"), (H5 + ' "x"', "E502"),
                            ("#iml/0.5/88d05d0839c1\nRD", "E502"), ("#iml/0.2/88d05d0839c1\nRD", "E502"),
@@ -154,9 +155,9 @@ class TestDocumentForm(unittest.TestCase):
                                   ('[READ|path="abc]', parse_L2, "unterminated quoted value"),
                                   (H5, decompile, "header alone: a document carries at least one item line after the header"),
                                   (H4, decompile, "header alone: a document carries at least one chain line after the header"),
-                                  (H4 + ' :GN"a"', decompile, "declarations and text lines need a 0.5 header (this message's"
+                                  (H4 + ' :GN"a"', decompile, "declarations and text lines need a 0.6 or 0.5 header (this message's"
                                    " header is version 0.4)"),
-                                  ('#iml/0.3/88d05d0839c1 "x"', decompile, "declarations and text lines need a 0.5 header")):
+                                  ('#iml/0.3/88d05d0839c1 "x"', decompile, "declarations and text lines need a 0.6 or 0.5 header")):
             with self.subTest(text=text):
                 with self.assertRaises(IMLError) as cm:
                     fn(text)
@@ -198,7 +199,7 @@ class TestDocumentCli(unittest.TestCase):
     def test_message_form_refuses_declarations(self):
         r = run_cli("compile", stdin="[READ]\n::STATE{@A, k:v}\n")
         self.assertEqual(r.returncode, 1)
-        self.assertEqual(r.stdout, H5 + " RD\n")
+        self.assertEqual(r.stdout, H6 + " RD\n")
         self.assertIn("<stdin>:2: E502", r.stderr)
         self.assertIn("carried in the document form: compile --document", r.stderr)
         r = run_cli("compile", stdin="  [READ]\n")
@@ -224,7 +225,7 @@ class TestDocumentCli(unittest.TestCase):
         r = run_cli("decompile", "--version", "0.5", stdin=H4 + "\nRD\n")
         self.assertEqual((r.returncode, r.stdout), (0, "[READ]\n"), r.stderr)
         r = run_cli("--version")
-        self.assertEqual(r.stdout.strip(), "iml 0.5.1")
+        self.assertEqual(r.stdout.strip(), "iml 0.6.0")
 
 
 class TestReportLines(unittest.TestCase):
