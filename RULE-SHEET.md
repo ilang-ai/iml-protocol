@@ -1,6 +1,6 @@
 # IML (I-Lang Machine Layer) 0.6 rule sheet
 
-IML is a machine spelling of I-Lang chains and documents; this sheet is enough to read and write IML 0.6. Verb roots, key codes, entity marks, aliases and declaration codes come from `registry/iml-registry-0.6.json` (digest prefix `0fddd3752aad`): use the file, never a guess. Full rules: `SPEC-IML-0.5.md` with the changes of `SPEC-IML-0.6.md`.
+IML is a machine spelling of I-Lang chains and documents; this sheet is enough to read and write IML 0.6. Verb roots, key codes, entity marks, aliases and declaration codes come from `registry/iml-registry-0.6.json` (digest prefix `ba5fde00dd69`): use the file, never a guess. Full rules: `SPEC-IML-0.5.md` with the changes of `SPEC-IML-0.6.md`.
 
 ## 1. Two shapes
 

@@ -19,7 +19,7 @@ from iml import (Chain, Decl, IMLError, Op, Text, compile, compile_doc, compile_
 from iml.__main__ import main  # noqa: E402
 
 H5 = "#iml/0.5/7e29fae7f5ea"
-H6 = "#iml/0.6/0fddd3752aad"
+H6 = "#iml/0.6/ba5fde00dd69"
 H4 = "#iml/0.4/88d05d0839c1"
 DESIGN_SRC = """::ILANG::v5.0::SPEC
 [TYPE:protocol_specification]

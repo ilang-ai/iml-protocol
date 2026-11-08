@@ -36,7 +36,7 @@ DESIGN_LIST = ("[Π:READ]", "[BATC:READ]", "[BATC:READ|src=@LOCAL,mch=*.md]", "[
 
 
 H04, H05 = "#iml/0.4/88d05d0839c1", "#iml/0.5/7e29fae7f5ea"
-H06 = "#iml/0.6/0fddd3752aad"
+H06 = "#iml/0.6/ba5fde00dd69"
 
 
 def to05(text04):

@@ -72,7 +72,7 @@ class TestRegistryContent(unittest.TestCase):
     def test_digest(self):
         self.assertEqual(len(self.obj["digest"]), 64)
         self.assertEqual(compute_digest(self.obj), self.obj["digest"])
-        self.assertEqual(self.obj["digest"][:12], "0fddd3752aad")
+        self.assertEqual(self.obj["digest"][:12], "ba5fde00dd69")
         chain = json.loads(CHAIN_PATH.read_text(encoding="utf-8"))
         self.assertEqual(compute_digest(chain), chain["digest"])
         self.assertEqual(chain["digest"][:12], "88d05d0839c1")

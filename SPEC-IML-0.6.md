@@ -2,7 +2,7 @@
 
 ::STATE{@SPEC, id:IML-0.6, revision:0.6.0, layer:machine, status:adopted, date:2026-11-08}
 ::STATE{@SPEC, canon:ilang-ai/ilang-spec, canon_pin:d1d4367, canon_commit:d1d436733373c6342a74d4865348761320138613, canon_version:v5.0.11}
-::STATE{@SPEC, registers_nothing:true, verbs_derived:88, aliases_derived:13, keys_derived:49, entities_derived:25, declarations_derived:50, tolerated_annotations:2, digest_prefix:0fddd3752aad}
+::STATE{@SPEC, registers_nothing:true, verbs_derived:88, aliases_derived:13, keys_derived:49, entities_derived:25, declarations_derived:50, tolerated_annotations:2, digest_prefix:ba5fde00dd69}
 ::STATE{@SPEC, supersedes:SPEC-IML-0.5.md, change:one_declaration_and_a_registry_file, owner_decision:A_2026-11-08, adds:::EXCLUDE_code_EX+registry_0.6+header_0.6, reads:0.6_0.5_0.4_0.3, grammar_unchanged:true}
 ::STATE{@SPEC, authors:Long_Quan_Zhu(Max/@SUN)+Claude_Fable_5.1(@FABLE), orcid:0009-0004-4540-8082}
 
@@ -18,14 +18,14 @@ A header carries the first 12 hex characters of the digest of the registry its d
 
 - One registered declaration: `::EXCLUDE`, class `amended`, code `EX`, inline shape, not a prose-body type. The 49 names and codes of 0.5 are unchanged (§1.3): the new name is appended after `LIST` in the amended class and `EX` was free.
 - A third registry file, `registry/iml-registry-0.6.json`, derived from the canon at `d1d4367` (ilang-spec 5.0.11): the chain tables of the 0.2 file unchanged, the canon pin of the new commit, 50 declarations, the two tolerated annotations.
-- The header `#iml/0.6/0fddd3752aad`. Compile writes it. The default reader reads `#iml/0.6/`, `#iml/0.5/` (with the frozen 0.5 registry's tables), `#iml/0.4/` and `#iml/0.3/` (chains only). `--version 0.5` writes a 0.5 header from the frozen 0.5 registry; `--version 0.2` is unchanged.
+- The header `#iml/0.6/ba5fde00dd69`. Compile writes it. The default reader reads `#iml/0.6/`, `#iml/0.5/` (with the frozen 0.5 registry's tables), `#iml/0.4/` and `#iml/0.3/` (chains only). `--version 0.5` writes a 0.5 header from the frozen 0.5 registry; `--version 0.2` is unchanged.
 - Nothing in the grammar changes. `::EXCLUDE{<id>|candidates:…|out:…|left:…|conf:…|by:…}` is a brace-shape declaration with pipe-separated fields, coded like any other: `:EX"<id>|candidates:…|…"`.
 
 ## 1. Registry
 
 ### 1.1 Three files
 
-`registry/iml-registry-0.2.json` (digest `88d05d0839c1…`) is the chain registry of 0.2, 0.3 and 0.4, kept byte for byte. `registry/iml-registry-0.5.json` (digest `7e29fae7f5ea…`) is the declaration registry of 0.5, kept byte for byte: the one a `#iml/0.5/` header names, and the tables a 0.5 document is read with. `registry/iml-registry-0.6.json` (digest `0fddd3752aad…`) is the registry of 0.6 and the default.
+`registry/iml-registry-0.2.json` (digest `88d05d0839c1…`) is the chain registry of 0.2, 0.3 and 0.4, kept byte for byte. `registry/iml-registry-0.5.json` (digest `7e29fae7f5ea…`) is the declaration registry of 0.5, kept byte for byte: the one a `#iml/0.5/` header names, and the tables a 0.5 document is read with. `registry/iml-registry-0.6.json` (digest `ba5fde00dd69…`) is the registry of 0.6 and the default.
 
 The loader pairs the 0.6 file with both: the chain tables (verbs, aliases, keys, entities, value codes) of all three must be equal, the 0.2 digest becomes the chain digest that 0.4, 0.3 and 0.2 headers carry, and the 0.5 digest is the one a 0.5 header carries. The canon pin differs between the files and is recorded in each: 0.2 and 0.5 derive from the canon at 127ba56, 0.6 from the canon at d1d4367.
 
@@ -43,7 +43,7 @@ As 0.5 §1.4, with `iml_version` `0.6`, `declarations` a list of 50 entries, and
 
 ## 2. Headers and reading
 
-Compile writes `#iml/0.6/0fddd3752aad`: a message and a document both. The default reader reads four headers: `#iml/0.6/` with the 0.6 digest prefix, the full document layer with the 0.6 tables; `#iml/0.5/` with `7e29fae7f5ea`, the full document layer with the frozen 0.5 tables, so every 0.5 document decodes to the same items as before and a 0.5 document that spelled `:EX` would be refused as it was; `#iml/0.4/` and `#iml/0.3/` with `88d05d0839c1`, chains only. A matched header whose 12 characters are not the digest prefix of the registry its version names is E502, as in 0.5. `--version 0.5` on the command line is a reader of 0.5, 0.4 and 0.3 and writes a 0.5 message header; `--version 0.2` is the old surface, unchanged.
+Compile writes `#iml/0.6/ba5fde00dd69`: a message and a document both. The default reader reads four headers: `#iml/0.6/` with the 0.6 digest prefix, the full document layer with the 0.6 tables; `#iml/0.5/` with `7e29fae7f5ea`, the full document layer with the frozen 0.5 tables, so every 0.5 document decodes to the same items as before and a 0.5 document that spelled `:EX` would be refused as it was; `#iml/0.4/` and `#iml/0.3/` with `88d05d0839c1`, chains only. A matched header whose 12 characters are not the digest prefix of the registry its version names is E502, as in 0.5. `--version 0.5` on the command line is a reader of 0.5, 0.4 and 0.3 and writes a 0.5 message header; `--version 0.2` is the old surface, unchanged.
 
 A 0.5 document decompiled and compiled again carries the 0.6 header; compiled with the 0.5 registry passed explicitly (`compile_doc(items, registry=reg.for_version("0.5"))`), it carries the 0.5 header and reproduces its record byte for byte, which is how the 0.5 corpus is tested.
 

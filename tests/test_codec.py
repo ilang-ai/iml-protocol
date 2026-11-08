@@ -29,7 +29,7 @@ RE_HEAD = re.compile(r"\[([^\[\]:|]+)")
 # quoted in 0.2 and bare in 0.3; 070 `Ω` is bare content on both and must not be mapped.
 SPELLING_DIFFERS = {"057", "068", "069", "070"}
 H05, H04, H03 = "#iml/0.5/7e29fae7f5ea", "#iml/0.4/", "#iml/0.3/"
-H06 = "#iml/0.6/0fddd3752aad"
+H06 = "#iml/0.6/ba5fde00dd69"
 
 
 def to04(message03):
@@ -593,7 +593,7 @@ class TestCli(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertIn("verbs 88", r.stdout)
         self.assertIn(default_registry().digest, r.stdout)
-        self.assertIn("header #iml/0.6/0fddd3752aad\n", r.stdout)
+        self.assertIn("header #iml/0.6/ba5fde00dd69\n", r.stdout)
         self.assertIn("header #iml/0.5/7e29fae7f5ea (read by the default reader, full document layer)", r.stdout)
         self.assertIn("header #iml/0.4/88d05d0839c1 (read by the default reader, chains only)", r.stdout)
         self.assertIn("header #iml/0.3/88d05d0839c1 (read by the default reader, chains only)", r.stdout)

@@ -630,7 +630,7 @@ class TestHeaderAcceptance(unittest.TestCase):
         self.assertEqual(surface("0.6").reads, {"0.6", "0.5", "0.4", "0.3"})
         self.assertEqual(surface("0.5").reads, {"0.5", "0.4", "0.3"})
         self.assertEqual(surface("0.2").reads, {"0.2"})
-        self.assertEqual(self.hw, "#iml/0.6/0fddd3752aad")
+        self.assertEqual(self.hw, "#iml/0.6/ba5fde00dd69")
         self.assertEqual(self.h04, "#iml/0.4/88d05d0839c1")
         for v in ("0.3", "0.4"):
             with self.assertRaises(ValueError) as cm:
@@ -694,7 +694,7 @@ class TestHeaderAcceptance(unittest.TestCase):
         r = run_cli("compile", stdin="[READ]\n")
         self.assertEqual(r.stdout, self.hw + " RD\n")
         r = run_cli("check-registry")
-        self.assertIn("header #iml/0.6/0fddd3752aad\n", r.stdout)
+        self.assertIn("header #iml/0.6/ba5fde00dd69\n", r.stdout)
         self.assertIn("header #iml/0.5/7e29fae7f5ea (read by the default reader, full document layer)\n", r.stdout)
         self.assertIn("header #iml/0.4/88d05d0839c1 (read by the default reader, chains only)\n", r.stdout)
         self.assertIn("header #iml/0.3/88d05d0839c1 (read by the default reader, chains only)\n", r.stdout)
