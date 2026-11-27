@@ -70,7 +70,7 @@ Scope, and nothing beyond it:
 1. A third registry file, `registry/iml-registry-0.6.json`, derived from the canon at d1d4367 (ilang-spec 5.0.11): the chain tables of the 0.2 file unchanged, 50 declarations (`EXCLUDE` is `EX`, the 49 codes of 0.5 unchanged), digest `ba5fde00dd69`. The 0.5 and 0.2 files are frozen byte for byte, each the registry its headers name.
 2. The header `#iml/0.6/`, which compile writes; the default reader reads 0.6 and 0.5 headers, each with its own tables, and 0.4 and 0.3 headers for chains. On the command line `decompile --version 0.5` reads 0.5, 0.4 and 0.3 headers; a 0.5 header is written through the library only.
 3. The canon pin moves only when the canon changes a table that the derivation takes from it: a moved pin is a new digest, so it takes a new registry file and a new header version (`SPEC-IML-0.6.md` §1.2). Re-derived on 2026-11-27 at ilang-spec 5.0.18 and 5.0.19, every table is unchanged; the pin stays at d1d4367.
-4. Grammar, laws, error codes and the measurement of 0.5 unchanged. The rule sheet grew by 156 bytes, to 8,795 bytes and 8,765 characters; it has not been measured in tokens, so whether it stays under the 2,600 `cl100k_base` ceiling of 0.5 stays open until it is. A test fails when the sheet outgrows that recorded size.
+4. Grammar, laws, error codes and the measurement of 0.5 unchanged. The rule sheet grew by 156 bytes, to 8,795 bytes and 8,765 characters; measured on 2026-11-27 it is 2,654 `cl100k_base` tokens, 54 over the 2,600 ceiling of 0.5, and 0.6 raises the ceiling to 2,700 for the added code and header (`SPEC-IML-0.6.md` §0.2), as 0.5 raised the ceiling of 0.4. A test fails when the sheet outgrows that recorded size.
 
 ## Deferred, and what of the canon stays open
 

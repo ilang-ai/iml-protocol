@@ -109,8 +109,8 @@ class TestMeasure(unittest.TestCase):
 
 
 class TestRuleSheetSize(unittest.TestCase):
-    """0.6.2, after the audit of v0.6.0: the rule sheet stands under a ceiling of 2,600 cl100k_base tokens
-    (SPEC-IML-0.5.md section 8) and no test held it, so the sheet of 0.6.0 grew 156 bytes past the measured
+    """0.6.2, after the audit of v0.6.0: the rule sheet stood under a ceiling of 2,600 cl100k_base tokens
+    (SPEC-IML-0.5.md section 8; 2,700 for 0.6, SPEC-IML-0.6.md section 0.2) and no test held it, so the sheet of 0.6.0 grew 156 bytes past the measured
     0.5 sheet without being measured. Its size as last recorded stands in README.md in bytes and characters;
     for 0.6 tokens were not measured (tiktoken was not installed where 0.6.2 was prepared). A sheet larger
     than the record fails here: measure it again (tools/measure.py; with tiktoken for the ceiling) and move

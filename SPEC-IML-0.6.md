@@ -19,6 +19,7 @@ A header carries the first 12 hex characters of the digest of the registry its d
 - One registered declaration: `::EXCLUDE`, class `amended`, code `EX`, inline shape, not a prose-body type. The 49 names and codes of 0.5 are unchanged (§1.3): the new name is appended after `LIST` in the amended class and `EX` was free.
 - A third registry file, `registry/iml-registry-0.6.json`, derived from the canon at `d1d4367` (ilang-spec 5.0.11): the chain tables of the 0.2 file unchanged, the canon pin of the new commit, 50 declarations, the two tolerated annotations.
 - The header `#iml/0.6/ba5fde00dd69`. Compile writes it. The default reader reads `#iml/0.6/`, `#iml/0.5/` (with the frozen 0.5 registry's tables), `#iml/0.4/` and `#iml/0.3/` (chains only). On the command line `--version V` is an option of `decompile` alone (`python -m iml --version` only prints the program version): `--version 0.5` is the reader of 0.5, 0.4 and 0.3 headers, and `--version 0.2` is unchanged. No command-line option writes a 0.5 header; the library writes one from the frozen 0.5 registry (§2).
+- The rule sheet carries the new code and header: its ceiling rises from the 2,600 `cl100k_base` tokens of 0.5 (`SPEC-IML-0.5.md` §8) to 2,700, as 0.5 raised the ceiling of 0.4 for what it added. The sheet of 0.6.2 is 2,654 tokens (measured on 2026-11-27, see `README.md`).
 - Nothing in the grammar changes. `::EXCLUDE{<id>|candidates:…|out:…|left:…|conf:…|by:…}` is a brace-shape declaration with pipe-separated fields, coded like any other: `:EX"<id>|candidates:…|…"`.
 
 ## 1. Registry
