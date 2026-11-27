@@ -48,7 +48,7 @@ def decompile_doc(text, registry=None):
                        " (decompile reads a message)", m.end() - 1)
     if nl < 0:
         raise IMLError("E300", "header alone: a document carries at least one item line after the header", len(text))
-    return read_document(text, nl, m.group(1), reg, sf)
+    return read_document(text, nl, m.group(1), reg.for_version(m.group(1)), sf)   # a 0.5 header reads with the 0.5 tables
 
 
 def read_document(text, nl, version, reg, sf):

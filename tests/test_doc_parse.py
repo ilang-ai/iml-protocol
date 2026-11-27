@@ -219,5 +219,43 @@ class TestReview050(unittest.TestCase):
         self.assertEqual([no for no, _ in chains], [6, 9])
 
 
+class TestReview060(unittest.TestCase):
+    """0.6.1: an input of the audit of v0.6.0 that parse_doc accepted and whose canonical print
+    does not read back. A flush-left body line goes through the dispatch of an indented one, so
+    a `[TAG] text ...]=>...` line is the operation line it is when indented and is refused where
+    it stands, at its own line and with the code the indented line gets (E300; E502 when the text
+    opens a second chain); the validator rejects the line too (E304). compile_doc
+    refused such a document before as well, at the canonical check, which names the first line
+    of the item, the declaration header."""
+
+    def test_flush_left_tag_text_line_with_an_operation_arrow(self):
+        head = "::ACTIVATE{a}\n"
+        for line in ("[NOTE] see [READ]=>[OUT]", "[NOTE:a] x]=>y", "[WHAT] a]=>[b", "[TAG-1:v] w [Ω]=>[OUT]"):
+            for indent in ("", "  "):                                  # flush-left as indented
+                doc = M + head + indent + line
+                self.assertTrue(lint(doc)[1], doc)                     # rejected by the validator
+                with self.assertRaises(IMLError) as cm:
+                    parse_doc(doc)
+                at = len(M + head + indent) + line.index(" ")          # in its own line: the space after the tag
+                self.assertEqual((cm.exception.code, cm.exception.offset), ("E300", at), doc)
+                self.assertIn("whitespace is not allowed outside a quoted value", cm.exception.message)
+        for line in ("[NOTE] [READ]=>[OUT]", "[NOTE:a] [Ω]=>[OUT]"):       # the text opens a second chain: E502
+            for indent in ("", "  "):
+                doc = M + head + indent + line
+                self.assertTrue(lint(doc)[1], doc)
+                with self.assertRaises(IMLError) as cm:
+                    parse_doc(doc)
+                at = len(M + head + indent) + line.index(" ")
+                self.assertEqual((cm.exception.code, cm.exception.offset), ("E502", at), doc)
+                self.assertIn("a second operation chain on the line", cm.exception.message)
+        # no `]=>` outside a quoted value: a tag text line, carried as a text, flush-left as indented
+        for line in ("[NOTE] see [READ]", '[NOTE] k="x]=>y"'):
+            flush, = one(head + line)
+            indented, = one(head + "  " + line)
+            self.assertEqual(flush, Decl("ACTIVATE", head="a", body=[Text(line)]))
+            self.assertEqual(flush, indented)
+            self.assertEqual(parse_doc(print_doc([flush])), [flush])   # L2
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -74,8 +74,7 @@ class _BodyReader:
                 break
             if is_body_form(s, self.verbs):
                 regime = "flush"
-                items.append(self.classify(j, name, s, self.line_off(j)))
-                j += 1
+                j = self.body_line(j, name, s, ind, header_indent, items)
                 continue
             break
         return items, j

@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tests"))
 
-from iml import compile_doc, decompile_doc, parse_doc  # noqa: E402
+from iml import Decl, IMLError, compile_doc, decompile, decompile_doc, parse_doc  # noqa: E402
 from iml.registry import CHAIN_PATH, DEFAULT_PATH, DOC_PATH_05, HEADER_VERSION, RegistryError, load_registry  # noqa: E402
 from test_registry import load_derive_module  # noqa: E402
 from test_registry_05 import CODES as CODES_05, DIGEST_02, DIGEST_05  # noqa: E402
@@ -107,6 +107,18 @@ class TestRegistry06(unittest.TestCase):
         iml06 = compile_doc(items)
         self.assertTrue(iml06.startswith(self.reg.header + "\n"))
         self.assertEqual(iml06[len(self.reg.header):], iml05[len(self.reg.prev.header):])   # same codes, new header
+
+    def test_decompile_doc_reads_a_0_5_header_with_the_0_5_tables(self):
+        """0.6.1: decompile_doc takes the tables its header names, as decompile does. `:EX` under a 0.5 header is
+        refused as it was in 0.5 (SPEC-IML-0.6.md section 2); 0.6.0 read it there with the 0.6 tables, as ::EXCLUDE."""
+        head = "open_gap|candidates:a;b|out:a;b|left:none|conf:tentative|by:agent_inferred"
+        line = '\n:EX"%s"' % head
+        for read in (decompile_doc, decompile):
+            with self.assertRaises(IMLError) as cm:
+                read(self.reg.prev.header + line)
+            self.assertEqual((cm.exception.code, cm.exception.offset), ("E300", len(self.reg.prev.header) + 2), read.__name__)
+            self.assertIn("unknown declaration code 'EX'", cm.exception.message)
+            self.assertEqual(read(self.reg.header + line), [Decl("EXCLUDE", head=head)])   # ::EXCLUDE under a 0.6 header
 
 
 if __name__ == "__main__":

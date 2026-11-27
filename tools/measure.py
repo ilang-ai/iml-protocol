@@ -39,7 +39,7 @@ not any vendor's billing. tiktoken is optional: when it cannot be imported or an
 cannot be loaded, the token columns are left out and the document says so.
 
 Also measured: RULE-SHEET.md as it stands on disk when the tool runs (its first line is
-quoted), and, as the record, the sheet at every release tag from v0.2.0 to v0.5.0, read with
+quoted), and, as the record, the sheet at every release tag from v0.2.0 to v0.6.0, read with
 `git show <tag>:RULE-SHEET.md` and measured in the same units; a tag that cannot be read
 where the tool runs (no git, or a copy without its tags) gives a row marked not measured.
 Not measured: the reply; the codec makes no model calls.
@@ -84,7 +84,7 @@ ROW_LABEL = {
 }
 # The rule sheet of every earlier release, read from its tag (0.5.0 and earlier copied figures from the
 # earlier reports, and the 0.2 figure there, 1,607 cl100k_base tokens, matched no tagged sheet).
-RULE_SHEET_TAGS = ["v0.2.0", "v0.2.1", "v0.2.2", "v0.3.0", "v0.3.1", "v0.4.0", "v0.4.1", "v0.5.0"]
+RULE_SHEET_TAGS = ["v0.2.0", "v0.2.1", "v0.2.2", "v0.3.0", "v0.3.1", "v0.4.0", "v0.4.1", "v0.5.0", "v0.5.1", "v0.6.0"]
 NOT_MEASURED = "not measured"
 REPLY_NOTE = "Reply cost: not measured in 0.5, the codec makes no model calls"
 
@@ -177,16 +177,16 @@ def measure_chains(items, encs, units, forms, reg, iml04=None):
     """Per chain rows and totals; iml04 maps a stem to its 0.4 message on disk (golden-0.4)."""
     rows = []
     for stem, src, ast in items:
-        message = compile(ast)
+        message = compile(ast, reg, reg.version)
         texts = {ILANG: print_L2(ast), MSG: message, LINE: message.split(" ", 1)[1], JSON_FORM: json_form(ast)}
         if MSG_04 in forms:
             texts[MSG_04] = iml04[stem] if iml04 else under(message, reg, "0.4")
             assert texts[MSG_04] == under(message, reg, "0.4") and decompile(texts[MSG_04]) == ast, stem
         if MSG_02 in forms:
-            texts[MSG_02] = compile(ast, version="0.2")
+            texts[MSG_02] = compile(ast, reg, version="0.2")
         rows.append((stem, {f: measure(texts[f], encs) for f in forms}))
     asts = [ast for _, _, ast in items]
-    document = compile_document(asts)
+    document = compile_document(asts, reg)
     assert decompile(document) == asts
     totals = {f: {u: sum(r[f][u] for _, r in rows) for u in units} for f in forms}
     totals[DOC] = measure(document, encs)
@@ -201,15 +201,15 @@ def walk(items):
             yield from walk(it.body)
 
 
-def measure_documents(encs, units):
+def measure_documents(encs, units, reg):
     """Per document rows, totals and the composition of corpus/golden-0.5/."""
     rows, comp = [], {"items": 0, "chains": 0, "decls": 0, "nested": 0, "texts": 0, "body_texts": 0,
                       "lines_src": 0, "lines_print": 0, "lines_iml": 0}
     for path in sorted(GOLDEN_05.glob("[0-9][0-9][0-9].ilang")):
         src = path.read_text(encoding="utf-8")
         iml = path.with_suffix(".iml").read_text(encoding="utf-8")
-        items = parse_doc(src)
-        assert compile_doc(items) + "\n" == iml and decompile_doc(iml) == items, path
+        items = parse_doc(src, reg)
+        assert compile_doc(items, reg) + "\n" == iml and decompile_doc(iml) == items, path
         printed = print_doc(items) + "\n"
         rows.append((path.stem, {SRC: measure(src, encs), PRINT: measure(printed, encs), IMLDOC: measure(iml, encs)}))
         every = list(walk(items))
@@ -243,14 +243,16 @@ def main(argv=None):
     p.add_argument("--note", default=None, help="one sentence written under the title, e.g. why the report was regenerated")
     a = p.parse_args(argv)
     out = Path(a.out).resolve() if a.out else ROOT / "measurements" / ("0.5-%s.md" % a.date)
-    reg = default_registry()
+    # 0.6: the default registry writes #iml/0.6/. This report is the 0.5 measurement, so one registry, the frozen
+    # 0.5 one, writes everything it labels 0.5, and its header, digest and canon commit are the ones named below.
+    reg = default_registry().for_version("0.5")
     encs, notes = load_tokenizers()
     units = ["bytes", "chars"] + list(encs)
     items72, items04 = read_sources(GOLDEN), read_sources(GOLDEN_04)
     iml04 = {stem: (GOLDEN_04 / (stem + ".iml")).read_text(encoding="utf-8").rstrip("\n") for stem, _, _ in items04}
     rows72, totals72 = measure_chains(items72, encs, units, FORMS_72, reg)
     rows04, totals04 = measure_chains(items04, encs, units, FORMS_04, reg, iml04)
-    rows05, totals05, comp = measure_documents(encs, units)
+    rows05, totals05, comp = measure_documents(encs, units, reg)
     n72, n04, n05 = len(items72), len(items04), len(rows05)
     h05, h04 = measure(reg.header, encs), measure(reg.header_for("0.4"), encs)
     L = []
