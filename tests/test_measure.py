@@ -5,7 +5,7 @@ measurement (SPEC-IML-0.5.md section 8; SPEC-IML-0.6.md: the measurement stands)
 therefore writes every form it labels 0.5 with the frozen 0.5 registry and names that
 registry in its report. Checked here against measurements/0.5-2026-09-18.md, row for row, in
 bytes and characters; tokens are not compared (tiktoken is optional, and the tests run
-without it)."""
+without it). And, since 0.6.2, RULE-SHEET.md does not outgrow the size last recorded for it."""
 
 import contextlib
 import importlib.util
@@ -21,6 +21,10 @@ sys.path.insert(0, str(ROOT))
 from iml import default_registry  # noqa: E402
 
 REPORT = ROOT / "measurements" / "0.5-2026-09-18.md"
+README = ROOT / "README.md"
+SHEET = ROOT / "RULE-SHEET.md"
+# RULE-SHEET.md as last recorded (README.md, the RULE-SHEET.md row): bytes and characters, at 0.6.2
+SHEET_RECORDED = (8795, 8765)
 RULE_SHEET = "## Rule sheet"
 ON_DISK = "RULE-SHEET.md (as on disk)"
 
@@ -102,6 +106,24 @@ class TestMeasure(unittest.TestCase):
             rows += 1
         print("\nmeasure: %d of the %d rows of figures of %s reproduce in bytes and characters (%d of %d rule-sheet tags"
               " could be read here)" % (rows, sum(len(t) - 2 for t in committed.values()), REPORT.name, len(read), len(tags)))
+
+
+class TestRuleSheetSize(unittest.TestCase):
+    """0.6.2, after the audit of v0.6.0: the rule sheet stands under a ceiling of 2,600 cl100k_base tokens
+    (SPEC-IML-0.5.md section 8) and no test held it, so the sheet of 0.6.0 grew 156 bytes past the measured
+    0.5 sheet without being measured. Its size as last recorded stands in README.md in bytes and characters;
+    for 0.6 tokens were not measured (tiktoken was not installed where 0.6.2 was prepared). A sheet larger
+    than the record fails here: measure it again (tools/measure.py; with tiktoken for the ceiling) and move
+    the record in README.md and SHEET_RECORDED together."""
+
+    def test_the_rule_sheet_does_not_outgrow_its_recorded_size(self):
+        data = SHEET.read_bytes()
+        size = (len(data), len(data.decode("utf-8")))
+        for unit, got, recorded in zip(("bytes", "characters"), size, SHEET_RECORDED):
+            self.assertLessEqual(got, recorded, "RULE-SHEET.md is %d %s, recorded %d: measure it again and move the"
+                                 " record (README.md, SHEET_RECORDED)" % (got, unit, recorded))
+        stated = "%s bytes and %s characters" % ("{:,}".format(SHEET_RECORDED[0]), "{:,}".format(SHEET_RECORDED[1]))
+        self.assertIn(stated, README.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

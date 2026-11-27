@@ -349,6 +349,44 @@ class TestAst(unittest.TestCase):
                 decompile(text)
             self.assertEqual(cm.exception.code, "E300", text)
 
+    def test_trailing_spaces_after_out_are_e300(self):
+        """0.6.2: `$` followed by nothing but spaces to the end of its line is the last operation, and
+        the spaces are trailing spaces (SPEC-IML-0.4.md section 2.6: "the space after the last op opens an op
+        that is not there"): E300, the answer they get after any other operation. 0.6.1 and earlier answered
+        E502, "`$` (OUT) may appear only as the last operation". `$` before a further operation stays E502,
+        and the 0.2 surface is read as the 0.2.1 codec read it."""
+        reg = default_registry()
+        missing = "missing operation after the space between operations"
+        for h in (reg.header, reg.header_for("0.5"), reg.header_for("0.4"), reg.header_for("0.3")):
+            for chain in ("RD $", "$", "RD@SR $fm=json", "LS@LC BT:RD $"):
+                for text in (h + " " + chain + " ", h + "\n" + chain + " \nXL\n", h + "\n" + chain + " \r\nXL\r\n",
+                             h + "\nXL\n" + chain + " "):
+                    with self.assertRaises(IMLError) as cm:
+                        decompile(text)
+                    e = cm.exception
+                    end = text.index(chain + " ") + len(chain) + 1
+                    self.assertEqual((e.code, e.message, e.offset, e.op_index), ("E300", missing, end, chain.count(" ") + 1), text)
+            with self.assertRaises(IMLError) as cm:        # two spaces: the second is a stray character, as after `RD`
+                decompile(h + " RD $  ")
+            e = cm.exception
+            self.assertEqual((e.code, e.offset, e.op_index), ("E300", len(h) + 6, 2))
+            self.assertIn("stray character", e.message)
+            with self.assertRaises(IMLError) as cm:
+                decompile(h + " RD  ")
+            self.assertEqual((cm.exception.code, cm.exception.offset, cm.exception.message), ("E300", len(h) + 4, e.message))
+            for tail in ("$ RD", "RD $ XL", "RD $  XL", "$ $"):                    # an operation follows `$`
+                with self.assertRaises(IMLError) as cm:
+                    decompile(h + " " + tail)
+                self.assertEqual(cm.exception.code, "E502", tail)
+                self.assertIn("may appear only as the last operation", cm.exception.message)
+        with self.assertRaises(IMLError) as cm:            # the body chain of a declaration is a chain line too
+            decompile(reg.header + '\n:GN"a"\n RD@SR $ ')
+        self.assertEqual((cm.exception.code, cm.exception.message), ("E300", missing))
+        for tail, code in (("RD→Ω→", "E502"), ("Ω→", "E502"), ("RD→Ω→RD", "E502"), ("RD→", "E300")):
+            with self.assertRaises(IMLError) as cm:
+                decompile(self.h02 + " " + tail, version="0.2")
+            self.assertEqual(cm.exception.code, code, tail)
+
     def test_raw_control_characters_inside_quotes(self):
         for ch in ("\x00", "\t", "\n", "\x1f", "\x7f", "\x85", "\u2028", "\u2029"):
             with self.assertRaises(IMLError) as cm:
@@ -553,8 +591,10 @@ class TestCli(unittest.TestCase):
             self.assertIn("default reader", r.stderr)
         r = self.run_cli("decompile", "--version", "0.5", stdin="")
         self.assertEqual(r.returncode, 0)
-        r = self.run_cli("compile", "--version", "0.2", stdin="")
-        self.assertEqual(r.returncode, 2)
+        for v in ("0.2", "0.5", "0.6"):   # compile takes no --version: the command line writes 0.6 only
+            r = self.run_cli("compile", "--version", v, stdin="")
+            self.assertEqual(r.returncode, 2)
+            self.assertIn("unknown option '--version' for compile", r.stderr)
         r = self.run_cli("decompile", "--document", stdin="")
         self.assertEqual(r.returncode, 2)
 

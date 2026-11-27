@@ -1737,5 +1737,53 @@
   "expect": "E502",
   "version": "0.3",
   "label": "a text line in a 0.3 message"
+ },
+ {
+  "input": "#iml/0.6/ba5fde00dd69 RD $ ",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.6",
+  "label": "trailing space after `$` in a message"
+ },
+ {
+  "input": "#iml/0.6/ba5fde00dd69 RD $  ",
+  "direction": "decompile",
+  "expect": "E300",
+  "version": "0.6",
+  "label": "two trailing spaces after `$` in a message"
+ },
+ {
+  "input": "#iml/0.6/ba5fde00dd69\nRD $ \nXL\n",
+  "direction": "decompile-document",
+  "expect": "E300",
+  "version": "0.6",
+  "label": "trailing space after `$` on a line of a document"
+ },
+ {
+  "input": "::ILANG::v5.0\n::ACTIVATE{a}\n[NOTE] see [READ]=>[OUT]\n",
+  "direction": "compile-document",
+  "expect": "E300",
+  "label": "flush-left tag line whose text holds an operation arrow"
+ },
+ {
+  "input": "#iml/0.5/7e29fae7f5ea\n:EX\"a|candidates:b\"",
+  "direction": "decompile-document",
+  "expect": "E300",
+  "version": "0.5",
+  "label": "the 0.6 declaration code EX under a 0.5 header"
+ },
+ {
+  "input": "#iml/0.5/ba5fde00dd69 RD",
+  "direction": "decompile",
+  "expect": "E502",
+  "version": "0.5",
+  "label": "a 0.5 header with the 0.6 digest"
+ },
+ {
+  "input": "#iml/0.6/7e29fae7f5ea RD",
+  "direction": "decompile",
+  "expect": "E502",
+  "version": "0.6",
+  "label": "a 0.6 header with the 0.5 digest"
  }
 ]

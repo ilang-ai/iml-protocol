@@ -225,7 +225,7 @@ class TestDocumentCli(unittest.TestCase):
         r = run_cli("decompile", "--version", "0.5", stdin=H4 + "\nRD\n")
         self.assertEqual((r.returncode, r.stdout), (0, "[READ]\n"), r.stderr)
         r = run_cli("--version")
-        self.assertEqual(r.stdout.strip(), "iml 0.6.1")
+        self.assertEqual(r.stdout.strip(), "iml 0.6.2")
 
 
 class TestReportLines(unittest.TestCase):

@@ -152,7 +152,11 @@ class TestPrint(unittest.TestCase):
 class TestWording(unittest.TestCase):
     def test_messages_follow_the_validator(self):
         """For every malformed document the validator rejects, IML's message is one of the
-        validator's messages for it, or the codec's own chain message (codes of the chain layer)."""
+        validator's messages for it, or the codec's own chain message (codes of the chain layer):
+        E302 or E304, or the error that the chain reader gives the line where the error stands,
+        read alone (an E300 of a chain, SPEC-IML-0.5.md section 7). 0.6.2 added the first case of
+        that kind to the corpus: a flush-left `[TAG] text ...]=>...` line, which since 0.6.1 is
+        read as the operation line it is (the validator: an unknown verb)."""
         cases = json.loads((ROOT / "corpus" / "malformed" / "cases.json").read_text(encoding="utf-8"))
         same = 0
         for c in cases:
@@ -161,10 +165,19 @@ class TestWording(unittest.TestCase):
             with self.assertRaises(IMLError) as cm:
                 parse_doc(c["input"])
             messages = [f[3] for f in lint(c["input"])[1]]
-            if cm.exception.message in messages:
+            e = cm.exception
+            if e.message in messages:
                 same += 1
-            else:
-                self.assertIn(cm.exception.code, ("E302", "E304"), (c["label"], cm.exception.message, messages))
+            elif e.code not in ("E302", "E304"):
+                text = c["input"]
+                start = text.rfind("\n", 0, e.offset) + 1
+                end = text.find("\n", e.offset)
+                line = text[start:] if end < 0 else text[start:end]
+                with self.assertRaises(IMLError, msg=(c["label"], e.message, messages)) as chain:
+                    parse_L2(line.strip())
+                at = start + len(line) - len(line.lstrip()) + chain.exception.offset
+                self.assertEqual((e.code, e.message, e.offset), (chain.exception.code, chain.exception.message, at),
+                                 (c["label"], messages))
         self.assertGreaterEqual(same, 20)
 
 

@@ -9,7 +9,8 @@ operation (B8). The text is the stripped line; indentation and trailing whitespa
 layout. It never holds a newline or another control character.
 
 Decl(name, sub, prefix, addr, shape, head, body, lines): one declaration.
-  name    a canon declaration name (the 49 of the 0.5 registry)
+  name    a canon declaration name (the 50 of the 0.6 registry; under a 0.5 header, the 49
+          of the 0.5 registry)
   sub     the second segment of `::MODULE::NAME`, or None
   prefix  the text inside a temporal prefix `T[...]`, or None (top level only)
   addr    the addressing text of a double-brace narrative (`::SAY{addr}{...}`), or None

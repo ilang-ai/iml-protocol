@@ -1,6 +1,6 @@
 """decompile_doc: IML document text to the document AST (SPEC-IML-0.5.md sections 2 and 4;
 the grammar is in iml.doc_codec). read_document is also what iml.codec.decompile calls for
-the document form, under a 0.5 header and under a 0.4 or 0.3 one (chains only there).
+the document form, under a 0.6 or 0.5 header and under a 0.4 or 0.3 one (chains only there).
 """
 
 from .codec import RE_HEADER, _check_version_and_digest, _scan_chain, scan_quoted, surface
@@ -28,8 +28,9 @@ class _Builder:
 
 def decompile_doc(text, registry=None):
     """IML document text -> list of items (Chain, Decl, Text). The header stands alone on
-    the first line: a 0.5 header reads the whole document layer, a 0.4 or 0.3 header
-    (digest 88d05d0839c1) chains only. A message is E502 here (decompile reads it)."""
+    the first line: a 0.6 header reads the whole document layer with the 0.6 tables, a 0.5
+    header with the frozen 0.5 tables, a 0.4 or 0.3 header (digest 88d05d0839c1) chains only.
+    A message is E502 here (decompile reads it)."""
     reg = registry or default_registry()
     sf = surface(HEADER_VERSION)
     if not isinstance(text, str) or not text.startswith("#iml/"):

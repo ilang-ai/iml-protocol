@@ -1,8 +1,8 @@
 """Malformed corpus: every case raises exactly the expected error code, with an offset.
 A decompile case names the header version its input carries and the reader that reads
-it: `version` 0.5, 0.4 and 0.3 are read by the default reader (one reader, three accepted
-headers), 0.2 by the 0.2 reader (version="0.2"). A compile case is I-Lang input, the
-same on every surface.
+it: `version` 0.6, 0.5, 0.4 and 0.3 are read by the default reader (one reader, four
+accepted headers), 0.2 by the 0.2 reader (version="0.2"). A compile case is I-Lang input,
+the same on every surface.
 
 0.5 adds two directions: `compile-document`, an I-Lang document given to parse_doc and
 then compile_doc, and `decompile-document`, an IML document given to decompile_doc (with
@@ -29,9 +29,9 @@ GOLDEN = ROOT / "corpus" / "golden"
 GOLDEN_03 = ROOT / "corpus" / "golden-0.3"
 GOLDEN_04 = ROOT / "corpus" / "golden-0.4"
 GOLDEN_05 = ROOT / "corpus" / "golden-0.5"
-CASE_VERSIONS = ("0.5", "0.4", "0.3", "0.2")
-DOCUMENT_VERSIONS = ("0.5", "0.4", "0.3")
-READER = {"0.5": DEFAULT_VERSION, "0.4": DEFAULT_VERSION, "0.3": DEFAULT_VERSION, "0.2": "0.2"}
+CASE_VERSIONS = ("0.6", "0.5", "0.4", "0.3", "0.2")
+DOCUMENT_VERSIONS = ("0.6", "0.5", "0.4", "0.3")
+READER = {"0.6": DEFAULT_VERSION, "0.5": DEFAULT_VERSION, "0.4": DEFAULT_VERSION, "0.3": DEFAULT_VERSION, "0.2": "0.2"}
 DIRECTIONS = ("compile", "decompile", "compile-document", "decompile-document")
 # design-0.5 section 10: the error rows the document cases must cover, by label
 DESIGN_ROWS_05 = (
@@ -44,6 +44,7 @@ DESIGN_ROWS_05 = (
     "a newline escape inside a text", "a nested body line with a chain", "a line starting with an illegal first character",
 )
 H04 = "#iml/0.4/88d05d0839c1 "
+H06, H05 = "#iml/0.6/ba5fde00dd69", "#iml/0.5/7e29fae7f5ea"
 
 
 def reader_for(case):
@@ -192,6 +193,25 @@ class TestMalformed(unittest.TestCase):
         messages = {(c["version"], c["input"]): c["expect"] for c in self.cases if c["direction"] == "decompile"}
         self.assertEqual(messages.get(("0.4", H04 + ':GN"a"')), "E502")
         self.assertEqual(messages.get(("0.3", '#iml/0.3/88d05d0839c1 "x"')), "E502")
+
+    def test_0_6_2_cases_cover_the_audit_of_0_6_0(self):
+        """The audit of v0.6.0 (2026-11-26) and the first cases under a 0.6 header. Spaces after `$` at the
+        end of a line are trailing spaces (SPEC-IML-0.4.md section 2.6, SPEC-IML-0.5.md section 2.4): E300, in
+        a message and on a line of a document, where 0.6.1 answered E502 "OUT may appear only as the last
+        operation". A flush-left tag line whose text holds an operation arrow is refused, as the validator
+        refuses it. The 0.6 code `EX` is unknown under a 0.5 header, whose document is read with the 0.5
+        tables. A header whose digest prefix is that of the other declaration registry is E502 (CLAUSE
+        HEADER-0.6)."""
+        got = {(c["direction"], c.get("version"), c["input"]): c["expect"] for c in self.cases}
+        for direction, version, text, code in (
+                ("decompile", "0.6", H06 + " RD $ ", "E300"),
+                ("decompile", "0.6", H06 + " RD $  ", "E300"),
+                ("decompile-document", "0.6", H06 + "\nRD $ \nXL\n", "E300"),
+                ("compile-document", None, "::ILANG::v5.0\n::ACTIVATE{a}\n[NOTE] see [READ]=>[OUT]\n", "E300"),
+                ("decompile-document", "0.5", H05 + '\n:EX"a|candidates:b"', "E300"),
+                ("decompile", "0.5", "#iml/0.5/ba5fde00dd69 RD", "E502"),
+                ("decompile", "0.6", "#iml/0.6/7e29fae7f5ea RD", "E502")):
+            self.assertEqual(got.get((direction, version, text)), code, text)
 
     def test_validator_oracle_on_the_document_cases(self):
         """Every compile-document case that opens with a `::ILANG::` marker is linted in raw

@@ -1,7 +1,7 @@
 """Command line: python -m iml <command> [option] [FILE]
 
   compile [--document] [FILE]
-                          without --document: read I-Lang chains and print one IML 0.5
+                          without --document: read I-Lang chains and print one IML 0.6
                           message per chain. A chain is one line, or one line followed by
                           continuation lines whose first non-blank characters are `=>`
                           (canon PATCH-2 section 1.7); a continuation line is joined only
@@ -14,17 +14,19 @@
                           with --document: read one whole raw I-Lang document (the
                           declaration layer: declarations with their bodies and spans,
                           chains, and every other line the canon admits, as the pinned
-                          validator reads a raw document) and print one IML 0.5 document:
-                          the header alone on the first line, then one item per line
+                          validator reads a raw document) and print one IML 0.6 document:
+                          the header alone on the first line, then one item per line.
+                          compile takes no --version: it writes the 0.6 header
   decompile [--version V] [FILE]
                           read IML and print canonical I-Lang. The form is decided by the
                           first line: a header alone opens a document, printed as one
-                          I-Lang document (a 0.5 document with its declarations; a 0.4 or
-                          0.3 document, chains only, one line per chain); a header
+                          I-Lang document (a 0.6 or 0.5 document with its declarations; a
+                          0.4 or 0.3 document, chains only, one line per chain); a header
                           followed by a chain is a message, and every non-empty line is
-                          then one message. V is 0.5 (default; the same reader reads a 0.4
-                          and a 0.3 header, so 0.4 and 0.3 are not values of V) or 0.2
-                          (the 0.2 surface, read only: one message per line)
+                          then one message. V is 0.6 (default: the reader of 0.6, 0.5, 0.4
+                          and 0.3 headers), 0.5 (the reader of 0.5, 0.4 and 0.3 headers: a
+                          0.6 header is E502 there) or 0.2 (the 0.2 surface, read only:
+                          one message per line); 0.4 and 0.3 are not values of V
   roundtrip FILE          read FILE as an I-Lang document; for every chain in it: parse ->
                           compile -> decompile -> compare, and print the IML message and
                           the canonical I-Lang; then the same for the whole document

@@ -14,12 +14,16 @@ Three files, all derived from the I-Lang canon by tools/derive_registry.py:
 
 Loading a file recomputes the digest (sha256 of the JSON without the `digest` member, keys
 sorted, separators `,` and `:`, ensure_ascii False) and refuses a file whose digest does
-not match. Loading the 0.5 registry also loads the 0.2 registry and checks that the chain
-tables and the canon pin of the two are equal, so that a 0.4 or 0.3 text, which carries
-the 0.2 digest in its header, is read with exactly the tables it was written with.
+not match. Loading a registry with a declarations table also loads the 0.2 registry and
+checks that the chain tables of the two are equal, so that a 0.4 or 0.3 text, which carries
+the 0.2 digest in its header, is read with exactly the tables it was written with; loading
+the 0.6 registry loads the frozen 0.5 registry as well (load_registry). The canon pin is
+recorded in each file: the 0.2 and 0.5 files carry 127ba56, the 0.6 file the commit of
+canon/PIN.
 
-Every header carries the first 12 hex characters of a digest: `#iml/0.5/` the 0.5
-registry's, `#iml/0.4/`, `#iml/0.3/` and `#iml/0.2/` the 0.2 registry's (the chain digest).
+Every header carries the first 12 hex characters of a digest: `#iml/0.6/` the 0.6
+registry's, `#iml/0.5/` the frozen 0.5 registry's, `#iml/0.4/`, `#iml/0.3/` and `#iml/0.2/`
+the 0.2 registry's (the chain digest).
 The version in a header is the surface version; HEADER_VERSION below is the one compile
 writes.
 """

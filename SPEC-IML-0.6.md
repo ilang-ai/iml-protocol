@@ -1,6 +1,6 @@
 # IML (I-Lang Machine Layer) 0.6
 
-::STATE{@SPEC, id:IML-0.6, revision:0.6.0, layer:machine, status:adopted, date:2026-11-08}
+::STATE{@SPEC, id:IML-0.6, revision:0.6.2, layer:machine, status:adopted, date:2026-11-08}
 ::STATE{@SPEC, canon:ilang-ai/ilang-spec, canon_pin:d1d4367, canon_commit:d1d436733373c6342a74d4865348761320138613, canon_version:v5.0.11}
 ::STATE{@SPEC, registers_nothing:true, verbs_derived:88, aliases_derived:13, keys_derived:49, entities_derived:25, declarations_derived:50, tolerated_annotations:2, digest_prefix:ba5fde00dd69}
 ::STATE{@SPEC, supersedes:SPEC-IML-0.5.md, change:one_declaration_and_a_registry_file, owner_decision:A_2026-11-08, adds:::EXCLUDE_code_EX+registry_0.6+header_0.6, reads:0.6_0.5_0.4_0.3, grammar_unchanged:true}
@@ -18,7 +18,7 @@ A header carries the first 12 hex characters of the digest of the registry its d
 
 - One registered declaration: `::EXCLUDE`, class `amended`, code `EX`, inline shape, not a prose-body type. The 49 names and codes of 0.5 are unchanged (§1.3): the new name is appended after `LIST` in the amended class and `EX` was free.
 - A third registry file, `registry/iml-registry-0.6.json`, derived from the canon at `d1d4367` (ilang-spec 5.0.11): the chain tables of the 0.2 file unchanged, the canon pin of the new commit, 50 declarations, the two tolerated annotations.
-- The header `#iml/0.6/ba5fde00dd69`. Compile writes it. The default reader reads `#iml/0.6/`, `#iml/0.5/` (with the frozen 0.5 registry's tables), `#iml/0.4/` and `#iml/0.3/` (chains only). `--version 0.5` writes a 0.5 header from the frozen 0.5 registry; `--version 0.2` is unchanged.
+- The header `#iml/0.6/ba5fde00dd69`. Compile writes it. The default reader reads `#iml/0.6/`, `#iml/0.5/` (with the frozen 0.5 registry's tables), `#iml/0.4/` and `#iml/0.3/` (chains only). On the command line `--version V` is an option of `decompile` alone (`python -m iml --version` only prints the program version): `--version 0.5` is the reader of 0.5, 0.4 and 0.3 headers, and `--version 0.2` is unchanged. No command-line option writes a 0.5 header; the library writes one from the frozen 0.5 registry (§2).
 - Nothing in the grammar changes. `::EXCLUDE{<id>|candidates:…|out:…|left:…|conf:…|by:…}` is a brace-shape declaration with pipe-separated fields, coded like any other: `:EX"<id>|candidates:…|…"`.
 
 ## 1. Registry
@@ -31,7 +31,9 @@ The loader pairs the 0.6 file with both: the chain tables (verbs, aliases, keys,
 
 ### 1.2 Sources
 
-`canon/` holds five files at the pin: `SPEC.md`, `SPEC-v4.1-MEDIA-PROFILE.md`, `archive/SPEC-v5.0-PATCH-2.md`, `ilang_grammar_validator.py` and, new in 0.6, `SPEC-v5.0.md`, the current canon whose §1.5 holds the amended registry. `tools/derive_registry.py` reads the declarations for 0.6 from `SPEC-v5.0.md` §1.5 and §1.6 (the four bold headings, now "Registered by amendment (2)", the terminator sentence, the narrative list, the tolerated annotations), the double-brace narratives from `SPEC.md` §7.1 and the prose-body types from PATCH-2 §1.2 B6, exactly as 0.5 read them from the archived PATCH-2; it cross-checks every class against the vendored validator's sets (`REGISTRY_AMEND` is now `LIST`, `EXCLUDE`; `DECL_STRUCTURAL` has 33 names). With `--check` it verifies that the 0.6 file reproduces and that the 0.2 and 0.5 files are the frozen bytes. `canon/127ba56/` keeps `SPEC.md` and `archive/SPEC-v5.0-PATCH-2.md` as they were at the 0.5 pin, because `corpus/golden-0.5/` quotes them verbatim; nothing is derived from them.
+`canon/` holds five files at the pin: `SPEC.md`, `SPEC-v4.1-MEDIA-PROFILE.md`, `archive/SPEC-v5.0-PATCH-2.md`, `ilang_grammar_validator.py` and, new in 0.6, `SPEC-v5.0.md`, the current canon whose §1.5 holds the amended registry. `tools/derive_registry.py` reads the declarations for 0.6 from `SPEC-v5.0.md` §1.5 and §1.6 (the four bold headings, now "Registered by amendment (2)", the terminator sentence, the narrative list, the tolerated annotations), the double-brace narratives from `SPEC.md` §7.1 and the prose-body types from §1.2 B6 of `SPEC-v5.0.md`, the same list that 0.5 read from B6 of the archived PATCH-2; it cross-checks every class against the vendored validator's sets (`REGISTRY_AMEND` is now `LIST`, `EXCLUDE`; `DECL_STRUCTURAL` has 33 names). With `--check` it verifies that the 0.6 file reproduces and that the 0.2 and 0.5 files are the frozen bytes. `canon/127ba56/` keeps `SPEC.md` and `archive/SPEC-v5.0-PATCH-2.md` as they were at the 0.5 pin, because `corpus/golden-0.5/` quotes them verbatim; nothing is derived from them.
+
+The pin moves only when the canon changes a table that the derivation takes from it. The digest is taken over the whole registry object, the pin included (the commit and the sha256 of each file), so a moved pin is a new digest even when every table is equal: a moved pin takes a new registry file and a new header version, as 0.6 did, and the 0.6 file is never derived again at another commit, which would orphan every 0.6 document. The canon has released since the pin: re-derived on 2026-11-27 at ilang-spec 5.0.18 (commit 7805aa2) and at 5.0.19 (commit 6f61b7f), every table equals that of the 0.6 file, and only the pin, and with it the digest, differs. The pin stays at d1d4367.
 
 ### 1.3 Order and codes
 
@@ -43,13 +45,13 @@ As 0.5 §1.4, with `iml_version` `0.6`, `declarations` a list of 50 entries, and
 
 ## 2. Headers and reading
 
-Compile writes `#iml/0.6/ba5fde00dd69`: a message and a document both. The default reader reads four headers: `#iml/0.6/` with the 0.6 digest prefix, the full document layer with the 0.6 tables; `#iml/0.5/` with `7e29fae7f5ea`, the full document layer with the frozen 0.5 tables, so every 0.5 document decodes to the same items as before and a 0.5 document that spelled `:EX` would be refused as it was; `#iml/0.4/` and `#iml/0.3/` with `88d05d0839c1`, chains only. A matched header whose 12 characters are not the digest prefix of the registry its version names is E502, as in 0.5. `--version 0.5` on the command line is a reader of 0.5, 0.4 and 0.3 and writes a 0.5 message header; `--version 0.2` is the old surface, unchanged.
+Compile writes `#iml/0.6/ba5fde00dd69`: a message and a document both. The default reader reads four headers: `#iml/0.6/` with the 0.6 digest prefix, the full document layer with the 0.6 tables; `#iml/0.5/` with `7e29fae7f5ea`, the full document layer with the frozen 0.5 tables, so every 0.5 document decodes to the same items as before and a 0.5 document that spelled `:EX` would be refused as it was; `#iml/0.4/` and `#iml/0.3/` with `88d05d0839c1`, chains only. A matched header whose 12 characters are not the digest prefix of the registry its version names is E502, as in 0.5. On the command line `decompile --version 0.5` is a reader of 0.5, 0.4 and 0.3 headers, to which a 0.6 header is E502, and `--version 0.2` is the old surface, unchanged; `compile` takes no `--version` and writes 0.6. A 0.5 header is written through the library only: `compile(chain, version="0.5")` writes a 0.5 message, and `compile_doc` with the frozen 0.5 registry a 0.5 document (next paragraph).
 
 A 0.5 document decompiled and compiled again carries the 0.6 header; compiled with the 0.5 registry passed explicitly (`compile_doc(items, registry=reg.for_version("0.5"))`), it carries the 0.5 header and reproduces its record byte for byte, which is how the 0.5 corpus is tested.
 
 ::CLAUSE{HEADER-0.6|conf:confirmed|scope:iml-0.6}
 T:header=#iml/0.6/+12_lowercase_hex_of_the_0.6_registry_digest
-T:compile_writes_0.6|--version_0.5_writes_0.5_from_the_frozen_0.5_registry|--version_0.2_unchanged
+T:compile_writes_0.6|decompile_--version_0.5_reads_0.5_0.4_0.3|a_0.5_header_is_written_through_the_library_only_from_the_frozen_0.5_registry|--version_0.2_unchanged
 T:default_reader=0.6_and_0.5_headers_full_document_layer_each_with_its_own_tables|0.4_and_0.3_headers_with_88d05d0839c1_chains_only
 T:the_0.5_and_0.2_registry_files_are_frozen_byte_for_byte|a_header_names_the_file_it_was_written_with
 A:adding_a_name_to_the_0.5_table⇒every_0.5_document_orphaned|refused_by_design
@@ -62,3 +64,4 @@ A:a_0.5_header_with_a_0.6_digest_prefix|a_0.6_header_with_a_0.5_prefix⇒E502
 ## 4. History
 
 - 0.6.0 (2026-11-08): the canon's 5.0.11 amendment registers `::EXCLUDE` (MODULE::MEMORY COMPLETE: a gap in memory is closed by elimination, never by recall; Mem-Forever 3.2 writes the block); IML derives the 0.6 registry from the canon at d1d4367, freezes the 0.5 file as the registry a 0.5 header names, and writes `#iml/0.6/`. Grammar, laws, errors and measurement as in 0.5.
+- 0.6.2 (2026-11-27): fix release after the audit of v0.6.0 of 2026-11-26 (0.6.1, the first fix release after it, left this text unchanged). This text: §0.2, §2 and CLAUSE HEADER-0.6 said that `--version 0.5` on the command line writes a 0.5 header; the command line has no such option, and they now say what exists (`decompile --version 0.5` reads 0.5, 0.4 and 0.3 headers; a 0.5 header is written through the library only); §1.2 states when the canon pin moves. Codec, one change: spaces after `$` at the end of a line are trailing spaces and E300, as 0.4 §2.6 and 0.5 §2.4 state, where the codec answered E502 "`$` (OUT) may appear only as the last operation"; `$` before a further operation stays E502, and the 0.2 surface is read as before. 7 malformed cases added, the first under a 0.6 header among them, 273 in all. Message form, registries and digests, AST and the six error codes unchanged.

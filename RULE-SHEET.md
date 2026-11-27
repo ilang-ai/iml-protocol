@@ -77,10 +77,10 @@ I-Lang:
   [READ:@SRC]=>[Ω]
 ```
 
-IML 0.5 document:
+IML 0.6 document:
 
 ```
-#iml/0.5/7e29fae7f5ea
+#iml/0.6/ba5fde00dd69
 :GN"verify_first"
  RD@SR $
 ```

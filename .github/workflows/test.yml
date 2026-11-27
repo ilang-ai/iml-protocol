@@ -20,5 +20,7 @@ jobs:
           fi
       - name: Registry derivation matches the committed file
         run: python tools/derive_registry.py --check
+      - name: The measurement tool runs
+        run: python tools/measure.py --out "$RUNNER_TEMP/measure.md"
       - name: Unit tests
         run: python -m unittest discover -s tests -v

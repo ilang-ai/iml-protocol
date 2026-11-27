@@ -1,8 +1,9 @@
-"""The IML 0.5 document form (SPEC-IML-0.5.md sections 2 and 4): compile_doc (document AST
--> IML text) and decompile_doc (IML text -> document AST).
+"""The IML document form (SPEC-IML-0.5.md sections 2 and 4; the 0.6 header, SPEC-IML-0.6.md
+section 2): compile_doc (document AST -> IML text) and decompile_doc (IML text -> document
+AST).
 
     document  := header NL item (NL item)* NL?
-    header    := "#iml/0.5/" HEX12
+    header    := "#iml/0.6/" HEX12                ; written; "#iml/0.5/" HEX12 is read, with the frozen 0.5 tables
     item      := chain | textline | decl
     chain     := op (SP op)*                      ; as 0.4, starts with a root or "$"
     textline  := QUOTED                           ; a top-level Text
@@ -58,7 +59,8 @@ NOT_CANONICAL = "not the canonical spelling of a construct: item %d reads back f
 
 # --------------------------------------------------------------------- compile
 def compile_doc(items, registry=None):
-    """Document AST -> IML 0.5 document text: the header alone on the first line, then the
+    """Document AST -> IML document text under the registry's header (0.6 by default; 0.5
+    when the frozen 0.5 registry is passed): the header alone on the first line, then the
     items, lines joined by `\\n`, no final newline. At least one item (E300)."""
     reg = registry or default_registry()
     hv = reg.version if reg.version in DOCUMENT_LAYER_VERSIONS else HEADER_VERSION   # 0.6; 0.5 with the frozen 0.5 registry

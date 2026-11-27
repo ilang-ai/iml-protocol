@@ -22,6 +22,10 @@ abstract: >-
   structure of a declaration becomes explicit line structure, an operation
   line in a declaration body is coded as a chain, and what the canon does not
   tokenize is carried as exact text.
+  Version 0.6 follows the canon's registration of one more declaration,
+  ::EXCLUDE: a third registry file, derived from the canon at a new pinned
+  commit, carries 50 declaration codes and is named by the #iml/0.6/ header,
+  and the 0.5 registry file is frozen as the one a 0.5 header names.
   IML registers no verb, modifier key, entity or declaration of its own and is
   not part of the I-Lang canon.
 type: software
@@ -34,8 +38,8 @@ authors:
 repository-code: "https://github.com/ilang-ai/iml-protocol"
 url: "https://github.com/ilang-ai/iml-protocol"
 license: MIT
-version: "0.6.1"
-date-released: 2026-11-26
+version: "0.6.2"
+date-released: 2026-11-27
 keywords:
   - I-Lang
   - machine layer

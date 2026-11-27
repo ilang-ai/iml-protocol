@@ -1,26 +1,33 @@
 #!/usr/bin/env python3
-"""Derive the IML registries from the vendored I-Lang canon.
+"""Derive the IML 0.6 registry from the vendored I-Lang canon.
 
-Two files are written, both from the same canon text:
-  registry/iml-registry-0.2.json   the chain registry of 0.2, 0.3 and 0.4, kept byte for
-                                   byte (digest 88d05d0839c1...): verbs, aliases, keys,
-                                   entities, value codes
-  registry/iml-registry-0.5.json   the same chain tables with iml_version 0.5, plus the
-                                   declarations table (49 names, two-character codes) and
-                                   the tolerated annotations; a digest of its own
+One file is written:
+  registry/iml-registry-0.6.json   the registry of 0.6 and the default: the chain tables
+                                   (verbs, aliases, keys, entities, value codes), which
+                                   must equal those of the frozen 0.2 file, the canon pin
+                                   of canon/PIN, the declarations table (50 names,
+                                   two-character codes) and the tolerated annotations,
+                                   under iml_version 0.6; a digest of its own
+Two files are frozen, byte for byte, as the files their headers name, and never written;
+their sha256 is checked (FROZEN below) before anything is derived:
+  registry/iml-registry-0.2.json   the chain registry of 0.2, 0.3 and 0.4 (digest
+                                   88d05d0839c1...)
+  registry/iml-registry-0.5.json   the declaration registry of 0.5, 49 names, derived at
+                                   the 0.5 pin, ilang-spec 127ba56 (digest 7e29fae7f5ea...)
 
-Sources (canon/, pinned by canon/PIN):
+Sources (canon/, pinned by canon/PIN at ilang-spec d1d4367, 5.0.11):
   SPEC.md                        verbs (section 3 tables, in order), aliases (3.10),
                                  core modifier keys (section 4), entity tiers 1 and 2
                                  (5.1, 5.2); the double-brace narratives (the 7.1 code
                                  block, forms written `::VERB{..}{..}`)
-  archive/SPEC-v5.0-PATCH-2.md   entity tier 3 (section 2.1, the eight role entities;
-                                 SPEC.md 5.3 only refers to this table); the declaration
-                                 registry (1.5: the four layer lists under their bold
-                                 headings, the meta list, the `::END_UNTRUSTED` sentence;
-                                 1.6: the narrative list and the LATENCY/CONFIDENCE
-                                 sentence); the prose-body types (1.2 B6,
+  SPEC-v5.0.md                   the declaration registry (1.5: the four layer lists under
+                                 their bold headings, the meta list, the `::END_UNTRUSTED`
+                                 sentence; 1.6: the narrative list and the LATENCY/
+                                 CONFIDENCE sentence); the prose-body types (1.2 B6,
                                  current_prose_body_types)
+  archive/SPEC-v5.0-PATCH-2.md   entity tier 3 (section 2.1, the eight role entities;
+                                 SPEC.md 5.3 only refers to this table), and tiers 1 and
+                                 2 again, which must equal those of SPEC.md
   SPEC-v4.1-MEDIA-PROFILE.md     media profile keys (4.4.2), entity tier 4 (5.4)
   ilang_grammar_validator.py     cross-check only: its VERBS, ALIASES, MODIFIERS,
                                  MEDIA_PROFILE, TIER1..TIER4, REGISTRY_V3, REGISTRY_V4,
@@ -31,13 +38,18 @@ Sources (canon/, pinned by canon/PIN):
 Order of items is the order of first appearance in the canon tables; the declarations
 follow the order of design 0.5 section 2 (v3, v4, v5, amended, meta, terminator,
 narrative). Codes are assigned first come, first served (design 0.2 section 1); the
-declaration codes by the same assign() over the 49 names with a fresh used set, a
-namespace of their own. IML registers nothing of its own.
+declaration codes by the same assign() over the 50 names with a fresh used set, a
+namespace of their own. IML registers nothing of its own. The pin moves only when the
+canon changes a table this tool takes from it (SPEC-IML-0.6.md section 1.2): the digest
+covers the pin, so a moved pin is a new registry file and a new header version, never a
+new 0.6 file.
 
 Usage:
-  python tools/derive_registry.py            derive and write both registry files
-  python tools/derive_registry.py --check    derive again and compare with both files (CI)
-  python tools/derive_registry.py --tables   print name=code tables to stdout
+  python tools/derive_registry.py            derive and write the 0.6 registry file
+  python tools/derive_registry.py --check    derive again and compare with the 0.6 file;
+                                             verify the frozen 0.2 and 0.5 files (CI)
+  python tools/derive_registry.py --tables   print the name=code tables of the 0.6
+                                             registry to stdout
 """
 
 import argparse

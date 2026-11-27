@@ -2,10 +2,10 @@
 
 One chain AST, two surfaces (SPEC-IML-0.5.md section 2; SPEC-IML-0.2.md section 2 for 0.2):
 
-    0.5, written and read (0.4, 0.3 read too)  0.2, read only (version="0.2")
+    0.6, written and read (0.5, 0.4, 0.3 read)  0.2, read only (version="0.2")
     document  := header NL item (NL item)*    (no document form)
     message   := header SP chain              message := header " " chain
-    header    := "#iml/0.5/" HEX12            header  := "#iml/0.2/" HEX12
+    header    := "#iml/0.6/" HEX12            header  := "#iml/0.2/" HEX12
     chain     := op (SP op)*                  chain   := op ("→" op)*
     op        := (ROOT (target | verbref)?    op      := (ROOT target? | "Ω") mods?
                   | "$") mods?
@@ -18,15 +18,18 @@ One chain AST, two surfaces (SPEC-IML-0.5.md section 2; SPEC-IML-0.2.md section 
     bare      := no `,` `"` `\\` whitespace or control character; first character not
                  `~` `@` `$` `"`             (0.2: not `~` `Φ` `"`; `→` excluded anywhere)
 
-The chain surface is the one of 0.3 and 0.4: 0.5 changes the header (#iml/0.5/ and the
-first 12 hex characters of the 0.5 registry's digest) and adds, in the document form, the
-declaration layer (items that are declarations or text lines, iml.doc_*). A 0.4 or 0.3
-header carries the digest of the 0.2 chain registry (88d05d0839c1) and is read by the
-default reader, chains only: a declaration or text line under it is E502. A verbref stands
-only after the root of BATC (`BT`): `BT:RD` is `[BATC:READ]`, the canon's batch shorthand
-(SPEC.md section 3.9). After any other root `:` is E300; `BT:` followed by anything but two
-characters of [A-Z0-9] is E300; two such characters that are not a root in the registry
-are E304; a target after the reference is E300.
+The chain surface is the one of 0.3 and 0.4: 0.5 changed the header (#iml/0.5/ and the
+first 12 hex characters of the 0.5 registry's digest) and added, in the document form, the
+declaration layer (items that are declarations or text lines, iml.doc_*); 0.6 changes the
+header again (#iml/0.6/ and the 0.6 registry's digest, for a table with one declaration
+more) and nothing else. A 0.5 header is read by the default reader with the frozen 0.5
+registry's tables. A 0.4 or 0.3 header carries the digest of the 0.2 chain registry
+(88d05d0839c1) and is read by the default reader, chains only: a declaration or text line
+under it is E502. A verbref stands only after the root of BATC (`BT`): `BT:RD` is
+`[BATC:READ]`, the canon's batch shorthand (SPEC.md section 3.9). After any other root `:`
+is E300; `BT:` followed by anything but two characters of [A-Z0-9] is E300; two such
+characters that are not a root in the registry are E304; a target after the reference is
+E300.
 
 The registry, the chain AST, the value rules and the six error codes are the same under
 both surfaces; only the reserved characters, the separator and the header differ. Every
@@ -35,14 +38,16 @@ a `quoted` and a `bare` value with the same content are the same AST value. Enti
 references in value position are a distinct kind. The codec fails closed: the first error
 stops it, with a 0-based character offset into the input.
 
-compile writes 0.5. The keyword `version="0.2"` on compile exists for the tests and the 0.2
-record (corpus/golden/*.iml); the command line does not expose it, and a verb reference has
-no 0.2 spelling (E502). A string value that holds a control character other than a newline
-has no spelling on either surface: compile and compile_document refuse it (E300) instead of
-writing a text that decompile would refuse. decompile reads 0.5, 0.4 and 0.3 by default
-(a document through iml.doc_read.read_document) and 0.2 with version="0.2"; a header of
-another version is E502. version="0.4" and version="0.3" name no surface (ValueError): the
-default reader reads those headers.
+compile writes 0.6. The keyword `version` on compile belongs to the library, and the
+command line does not expose it: `version="0.5"` writes a 0.5 message header, with the
+frozen 0.5 registry's digest (SPEC-IML-0.6.md section 2), and `version="0.2"` exists for the
+tests and the 0.2 record (corpus/golden/*.iml); a verb reference has no 0.2 spelling
+(E502). A string value that holds a control character other than a newline has no spelling
+on either surface: compile and compile_document refuse it (E300) instead of writing a text
+that decompile would refuse. decompile reads 0.6, 0.5, 0.4 and 0.3 by default (a document
+through iml.doc_read.read_document), 0.5, 0.4 and 0.3 with version="0.5" (a 0.6 header is
+E502 there) and 0.2 with version="0.2"; a header of another version is E502. version="0.4"
+and version="0.3" name no surface (ValueError): the default reader reads those headers.
 """
 
 import re
@@ -68,11 +73,11 @@ class Surface:
     reference, omega is OUT, sep separates operations. reserved_in_bare are the
     characters a bare value may not contain (besides whitespace and control characters);
     first_excluded are the characters a bare value may not start with; first_reserved
-    is the subset of those that opens no other kind and is E303 (0.5: `$`). reads are
-    the header versions this surface's reader accepts (0.5 reads 0.4 and 0.3 too: the same
-    chain surface; their headers carry the chain digest, and a document under them carries
-    chains only); verbref says whether `:` after the BATC root opens a verb reference (0.5)
-    or is a stray character (0.2)."""
+    is the subset of those that opens no other kind and is E303 (0.6 and 0.5: `$`). reads
+    are the header versions this surface's reader accepts (0.6 reads 0.5, 0.4 and 0.3 too,
+    0.5 reads 0.4 and 0.3: the same chain surface; a 0.4 or 0.3 header carries the chain
+    digest, and a document under it carries chains only); verbref says whether `:` after the
+    BATC root opens a verb reference (0.6, 0.5) or is a stray character (0.2)."""
 
     __slots__ = ("version", "phi", "omega", "sep", "sep_name", "document",
                  "reserved_in_bare", "first_excluded", "first_reserved", "reads", "verbref")
@@ -287,7 +292,7 @@ def iml_bareable(content, version=DEFAULT_VERSION):
     """True when content may be written as a bare value on the given surface: not
     empty, none of the surface's reserved characters, no whitespace or control
     character, and not starting with one of its first-position exclusions
-    (0.5: `~` `@` `$` `"`; 0.2: `~` `Φ` `"`)."""
+    (0.6 and 0.5: `~` `@` `$` `"`; 0.2: `~` `Φ` `"`)."""
     sf = surface(version)
     if not content or content[0] in sf.first_excluded:
         return False
@@ -303,9 +308,9 @@ def compile(chain, registry=None, version=DEFAULT_VERSION):
     E304, an unknown key E302, a bad entity name E200, OUT not last E502, a verb
     reference on a verb other than BATC E300, an unknown verb reference E304, OUT as
     the reference E502, a control character other than a newline in a string value E300
-    (no reader yields one; only a hand-built AST holds it). version selects the surface;
-    the command line writes 0.5 only, and a verb reference has no spelling on the 0.2
-    surface (E502)."""
+    (no reader yields one; only a hand-built AST holds it). version selects the surface
+    ("0.5" writes the 0.5 header, with the frozen 0.5 registry's digest); the command line
+    writes 0.6 only, and a verb reference has no spelling on the 0.2 surface (E502)."""
     reg = registry or default_registry()
     sf = surface(version)
     return reg.header_for(sf.version) + " " + _compile_chain(chain, reg, sf)
@@ -418,21 +423,23 @@ def is_document(text):
 def decompile(text, registry=None, version=DEFAULT_VERSION):
     """IML text -> AST. The form is decided by the first line: a header followed by one
     space and a chain is a message and returns one Chain; a header alone on the first
-    line opens a document (0.5, 0.4 and 0.3 only), read by iml.doc_read.read_document: the
-    result is a list of items in order (Chain, Decl, Text under a 0.5 header; Chain only
-    under a 0.4 or 0.3 header, where a declaration or text line is E502). One final line terminator (`\\n` or `\\r\\n`) is
+    line opens a document (0.6, 0.5, 0.4 and 0.3 only), read by iml.doc_read.read_document:
+    the result is a list of items in order (Chain, Decl, Text under a 0.6 or 0.5 header, a
+    0.5 document read with the frozen 0.5 registry's tables; Chain only under a 0.4 or 0.3
+    header, where a declaration or text line is E502). One final line terminator (`\\n` or `\\r\\n`) is
     accepted on either form; a blank line, a trailing space and a second header in a
     document are errors.
 
     The header is read in this order: no `#iml/` prefix is E502 (no header); a prefix
     that does not have the shape `#iml/<digits>.<digits>/<12 lowercase hex>` followed
     by a space or the end of the line is E300; a shaped header of a version the reader
-    does not accept (the default reader accepts 0.5, 0.4 and 0.3; the 0.2 reader 0.2
-    only), or with a digest prefix other than the one its version carries (the 0.5
-    registry's for 0.5, the chain registry's for 0.4, 0.3 and 0.2), is E502. In a message
-    a declaration or text line (a first character `:` or `"`) is E502: under a 0.5 header
-    those exist in the document form only, and under a 0.4 or 0.3 header they need a 0.5
-    header, in a message as in a document."""
+    does not accept (the default reader accepts 0.6, 0.5, 0.4 and 0.3; the 0.5 reader 0.5,
+    0.4 and 0.3; the 0.2 reader 0.2 only), or with a digest prefix other than the one its
+    version carries (the 0.6 registry's for 0.6, the frozen 0.5 registry's for 0.5, the
+    chain registry's for 0.4, 0.3 and 0.2), is E502. In a message a declaration or text line
+    (a first character `:` or `"`) is E502: under a 0.6 or 0.5 header those exist in the
+    document form only, and under a 0.4 or 0.3 header they need a 0.6 or 0.5 header, in a
+    message as in a document."""
     reg = registry or default_registry()
     sf = surface(version)
     if not isinstance(text, str) or not text.startswith("#iml/"):
@@ -606,7 +613,11 @@ def _scan_chain(text, i, n, reg, sf, idx=0):
         if i >= n:
             break
         if text[i] == sep:
-            if verb == "OUT":
+            # OUT before a further operation is E502. When nothing but spaces follows OUT to the end of the line,
+            # OUT is the last operation and the spaces are trailing spaces (SPEC-IML-0.4.md section 2.6: "the
+            # space after the last op opens an op that is not there"): they fall through to the E300 they get
+            # after any other operation. The 0.2 surface (separator `→`) is read as the 0.2.1 codec read it.
+            if verb == "OUT" and (sep != " " or text[i:n].strip(" ")):
                 raise IMLError("E502", "`%s` (OUT) may appear only as the last operation" % omega, i, idx)
             i += 1
             idx += 1
